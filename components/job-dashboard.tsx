@@ -1,12 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Job, SectorType, WorkMode } from "@/lib/types";
-
-type ApiPayload = {
-  total: number;
-  jobs: Job[];
-};
+import { FormEvent, useEffect, useState } from "react";
+import { Job, SearchResponse, SectorType, WorkMode } from "@/lib/types";
 
 const sectors: Array<{ label: string; value: SectorType | "all" }> = [
   { label: "Tutti", value: "all" },
@@ -20,10 +15,23 @@ const modes: Array<{ label: string; value: WorkMode | "all" }> = [
   { label: "Hybrid", value: "hybrid" }
 ];
 
-function formatDate(input: string) {
+function formatDate(input: string | null) {
+  if (!input) {
+    return "N.D.";
+  }
+
   return new Intl.DateTimeFormat("it-IT", {
     day: "2-digit",
     month: "short"
+  }).format(new Date(input));
+}
+
+function formatTimestamp(input: string) {
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit"
   }).format(new Date(input));
 }
 
@@ -40,46 +48,111 @@ export function JobDashboard() {
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState<SectorType | "all">("all");
   const [workMode, setWorkMode] = useState<WorkMode | "all">("all");
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvKeywords, setCvKeywords] = useState<string[]>([]);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState("");
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadJobs() {
+  async function runSearch(usePost: boolean) {
+    if (usePost) {
       setLoading(true);
+      const formData = new FormData();
+      formData.set("city", "Torino");
+      formData.set("q", query);
+      formData.set("sector", sector);
+      formData.set("workMode", workMode);
+      formData.set("includeRemote", "false");
 
-      const params = new URLSearchParams({
-        city: "Torino",
-        q: query,
-        sector,
-        workMode,
-        includeRemote: "false"
-      });
-
-      const response = await fetch(`/api/jobs?${params.toString()}`, {
-        signal: controller.signal
-      });
-
-      if (!response.ok) {
-        setJobs([]);
-        setTotal(0);
-        setLoading(false);
-        return;
+      if (cvFile) {
+        formData.set("cv", cvFile);
       }
 
-      const payload = (await response.json()) as ApiPayload;
+      const response = await fetch("/api/jobs", {
+        method: "POST",
+        body: formData
+      });
+      const payload = (await response.json()) as SearchResponse;
       setJobs(payload.jobs);
       setTotal(payload.total);
+      setCvKeywords(payload.cvKeywords);
+      setLastUpdatedAt(payload.lastUpdatedAt);
       setLoading(false);
+      return;
     }
 
-    loadJobs().catch(() => {
-      setJobs([]);
-      setTotal(0);
-      setLoading(false);
+    const params = new URLSearchParams({
+      city: "Torino",
+      q: query,
+      sector,
+      workMode,
+      includeRemote: "false"
     });
 
-    return () => controller.abort();
-  }, [query, sector, workMode]);
+    const response = await fetch(`/api/jobs?${params.toString()}`);
+    const payload = (await response.json()) as SearchResponse;
+    setJobs(payload.jobs);
+    setTotal(payload.total);
+    setCvKeywords(payload.cvKeywords);
+    setLastUpdatedAt(payload.lastUpdatedAt);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInitialJobs() {
+      try {
+        const params = new URLSearchParams({
+          city: "Torino",
+          q: "",
+          sector: "all",
+          workMode: "all",
+          includeRemote: "false"
+        });
+        const response = await fetch(`/api/jobs?${params.toString()}`);
+        const payload = (await response.json()) as SearchResponse;
+
+        if (!active) {
+          return;
+        }
+
+        setJobs(payload.jobs);
+        setTotal(payload.total);
+        setCvKeywords(payload.cvKeywords);
+        setLastUpdatedAt(payload.lastUpdatedAt);
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setJobs([]);
+        setTotal(0);
+        setCvKeywords([]);
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadInitialJobs();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    try {
+      await runSearch(true);
+    } catch {
+      setJobs([]);
+      setTotal(0);
+      setCvKeywords([]);
+      setLoading(false);
+    }
+  }
 
   return (
     <section className="relative mx-auto max-w-7xl px-6 pb-16">
@@ -95,15 +168,15 @@ export function JobDashboard() {
                 Job radar personale per trovare ruoli utili, non rumore.
               </h1>
               <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
-                MVP leggero per monitorare offerte su Torino, Italia, separare pubblico e privato,
-                e lasciare fuori i ruoli fully remote nella fase iniziale.
+                Premi Enter o usa il pulsante per lanciare uno scraping aggiornato del pubblico
+                ufficiale e combinare i risultati con il privato, anche in base al tuo CV.
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[1.5fr_1fr_1fr]">
+            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-[1.4fr_0.9fr_0.9fr]">
               <label className="rounded-[24px] border border-black/10 bg-white/70 p-4">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Cerca ruolo
+                  Cerca ruolo o premi Enter
                 </span>
                 <input
                   value={query}
@@ -146,7 +219,26 @@ export function JobDashboard() {
                   ))}
                 </select>
               </label>
-            </div>
+
+              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4 md:col-span-2">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                  Carica CV PDF
+                </span>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
+                  className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:font-semibold file:text-white"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="rounded-[24px] bg-clay px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                {loading ? "Aggiorno..." : "Aggiorna con scraping live"}
+              </button>
+            </form>
           </div>
 
           <div className="rounded-[28px] bg-ink p-6 text-white">
@@ -157,10 +249,22 @@ export function JobDashboard() {
                 <p className="text-sm text-white/70">annunci Torino non fully remote</p>
               </div>
               <div className="grid gap-3 text-sm text-white/70">
-                <p>Fonti iniziali: siti aziendali, enti pubblici, sorgenti stabili.</p>
-                <p>Deploy cheap: frontend e API su Vercel Hobby, seed locale senza database.</p>
-                <p>Passo successivo: adapter per import reale e persistenza su Postgres free.</p>
+                <p>Pubblico: scraping live del Comune di Torino con filtro solo bandi ancora attivi.</p>
+                <p>Privato: seed iniziale con scadenza opzionale quando il sito non la espone.</p>
+                <p>{lastUpdatedAt ? `Ultimo refresh ${formatTimestamp(lastUpdatedAt)}` : "Pronto al refresh live."}</p>
               </div>
+              {cvKeywords.length > 0 ? (
+                <div className="rounded-2xl bg-white/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/60">Keyword CV</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {cvKeywords.map((keyword) => (
+                      <span key={keyword} className="rounded-full border border-white/15 px-3 py-1 text-xs">
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -196,7 +300,7 @@ export function JobDashboard() {
                     Pubblicato {formatDate(job.postedAt)}
                   </span>
                   <span className="block rounded-full bg-[#f9dfd5] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#8c3216]">
-                    Scade {formatDate(job.expiresAt)}
+                    {job.expiresAt ? `Scade ${formatDate(job.expiresAt)}` : "Scadenza non indicata"}
                   </span>
                 </div>
               </div>
@@ -229,9 +333,10 @@ export function JobDashboard() {
           ))
         ) : (
           <div className="col-span-full rounded-[28px] border border-dashed border-black/20 bg-white/65 p-8 text-center">
-            <p className="text-xl font-semibold">Nessun annuncio con questi filtri.</p>
+            <p className="text-xl font-semibold">Nessun annuncio attivo con questi filtri.</p>
             <p className="mt-2 text-sm text-black/65">
-              Per ora il dataset seed esclude in automatico i ruoli fully remote.
+              Per il pubblico mostriamo solo bandi con scadenza futura; per il privato la
+              scadenza resta opzionale se non pubblicata dal sito.
             </p>
           </div>
         )}

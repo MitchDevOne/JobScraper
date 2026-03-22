@@ -14,11 +14,12 @@ export type Job = {
   sourceType: "company-site" | "public-portal" | "aggregator";
   originalUrl: string;
   postedAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
   discoveredAt: string;
   tags: string[];
   summary: string;
   status: JobStatus;
+  relevanceScore?: number;
 };
 
 export type JobFilters = {
@@ -27,4 +28,11 @@ export type JobFilters = {
   workMode?: WorkMode | "all";
   includeRemote?: boolean;
   city?: string;
+};
+
+export type SearchResponse = {
+  total: number;
+  jobs: Job[];
+  cvKeywords: string[];
+  lastUpdatedAt: string;
 };

@@ -1,8 +1,8 @@
-import { Job, JobFilters } from "@/lib/types";
+import { Job } from "@/lib/types";
 
-export const jobs: Job[] = [
+export const privateJobsSeed: Job[] = [
   {
-    id: "1",
+    id: "reply-frontend-developer",
     title: "Frontend Developer",
     company: "Reply",
     sector: "privato",
@@ -13,14 +13,14 @@ export const jobs: Job[] = [
     sourceType: "company-site",
     originalUrl: "https://www.reply.com/it/careers/job-details/frontend-developer-torino",
     postedAt: "2026-03-20",
-    expiresAt: "2026-04-10",
-    discoveredAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
     tags: ["react", "typescript", "frontend"],
     summary: "Ruolo frontend con stack React e TypeScript, presenza in sede 2 giorni a settimana.",
     status: "nuova"
   },
   {
-    id: "2",
+    id: "intesa-data-analyst",
     title: "Data Analyst",
     company: "Intesa Sanpaolo",
     sector: "privato",
@@ -31,32 +31,14 @@ export const jobs: Job[] = [
     sourceType: "company-site",
     originalUrl: "https://group.intesasanpaolo.com/it/careers/posizioni-aperta/data-analyst-torino",
     postedAt: "2026-03-18",
-    expiresAt: "2026-04-03",
-    discoveredAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
     tags: ["sql", "python", "data"],
     summary: "Analisi dati e reporting su processi interni, team basato su Torino.",
     status: "vista"
   },
   {
-    id: "3",
-    title: "Istruttore Amministrativo",
-    company: "Comune di Torino",
-    sector: "pubblico",
-    location: "Torino, Piemonte, Italia",
-    city: "Torino",
-    workMode: "on-site",
-    source: "Portale Concorsi",
-    sourceType: "public-portal",
-    originalUrl: "https://www.comune.torino.it/concorsi/istruttore-amministrativo-area-torino-2026",
-    postedAt: "2026-03-17",
-    expiresAt: "2026-04-17",
-    discoveredAt: "2026-03-22",
-    tags: ["amministrazione", "concorso", "ente-locale"],
-    summary: "Concorso pubblico per profilo amministrativo con attivita in presenza.",
-    status: "nuova"
-  },
-  {
-    id: "4",
+    id: "prima-software-engineer",
     title: "Software Engineer",
     company: "Prima Industrie",
     sector: "privato",
@@ -67,32 +49,32 @@ export const jobs: Job[] = [
     sourceType: "company-site",
     originalUrl: "https://www.primaindustrie.com/careers/software-engineer-collegno",
     postedAt: "2026-03-19",
-    expiresAt: "2026-04-08",
-    discoveredAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
     tags: ["csharp", "automation", "industry"],
     summary: "Sviluppo software per sistemi industriali con sede nell'area torinese.",
     status: "salvata"
   },
   {
-    id: "5",
+    id: "csi-pmo",
     title: "Project Management Officer",
     company: "CSI Piemonte",
-    sector: "pubblico",
+    sector: "privato",
     location: "Torino, Piemonte, Italia",
     city: "Torino",
     workMode: "hybrid",
-    source: "Public Organization Jobs",
-    sourceType: "public-portal",
+    source: "Organization Jobs",
+    sourceType: "company-site",
     originalUrl: "https://www.csipiemonte.it/lavora-con-noi/project-management-officer-2026",
     postedAt: "2026-03-15",
-    expiresAt: "2026-03-31",
-    discoveredAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
     tags: ["project-management", "pmo", "digitale"],
-    summary: "Supporto a progetti digitali della PA piemontese con modello ibrido.",
+    summary: "Supporto a progetti digitali in un'organizzazione ICT con base a Torino.",
     status: "nuova"
   },
   {
-    id: "6",
+    id: "alten-backend-remote",
     title: "Backend Developer",
     company: "Alten Italia",
     sector: "privato",
@@ -103,10 +85,10 @@ export const jobs: Job[] = [
     sourceType: "aggregator",
     originalUrl: "https://it.indeed.com/viewjob?jk=backend-developer-remote-torino",
     postedAt: "2026-03-21",
-    expiresAt: "2026-04-21",
-    discoveredAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
     tags: ["java", "spring", "backend"],
-    summary: "Ruolo fully remote, presente nel seed solo per dimostrare l'esclusione di default.",
+    summary: "Ruolo fully remote, mantenuto solo per testare l'esclusione automatica.",
     status: "nuova"
   }
 ];
@@ -118,9 +100,9 @@ export const sources = [
     status: "MVP"
   },
   {
-    name: "Portale Concorsi / enti locali",
-    focus: "Fonti per il settore pubblico e organizzazioni partecipate.",
-    status: "MVP"
+    name: "Comune di Torino - concorsi",
+    focus: "Scraping live della fonte pubblica ufficiale, con filtro solo bandi ancora attivi.",
+    status: "Live"
   },
   {
     name: "Indeed / aggregatori",
@@ -128,49 +110,3 @@ export const sources = [
     status: "Later"
   }
 ];
-
-export function filterJobs(filters: JobFilters = {}) {
-  const {
-    sector = "all",
-    q = "",
-    workMode = "all",
-    includeRemote = false,
-    city = "Torino"
-  } = filters;
-
-  const query = q.trim().toLowerCase();
-
-  return jobs.filter((job) => {
-    if (!includeRemote && job.workMode === "remote") {
-      return false;
-    }
-
-    if (sector !== "all" && job.sector !== sector) {
-      return false;
-    }
-
-    if (workMode !== "all" && job.workMode !== workMode) {
-      return false;
-    }
-
-    if (city && job.city.toLowerCase() !== city.toLowerCase()) {
-      return false;
-    }
-
-    if (!query) {
-      return true;
-    }
-
-    const haystack = [
-      job.title,
-      job.company,
-      job.location,
-      job.summary,
-      ...job.tags
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(query);
-  });
-}
