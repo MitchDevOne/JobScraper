@@ -14,6 +14,7 @@ export type Job = {
   sourceType: "company-site" | "public-portal" | "aggregator";
   originalUrl: string;
   postedAt: string;
+  expiresAt: string;
   discoveredAt: string;
   tags: string[];
   summary: string;

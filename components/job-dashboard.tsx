@@ -27,6 +27,12 @@ function formatDate(input: string) {
   }).format(new Date(input));
 }
 
+function sectorBadgeClass(sector: SectorType) {
+  return sector === "pubblico"
+    ? "bg-[#d7e7ff] text-[#113a7a]"
+    : "bg-mist text-pine";
+}
+
 export function JobDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
@@ -177,15 +183,22 @@ export function JobDashboard() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <span className="inline-flex rounded-full bg-mist px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-pine">
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${sectorBadgeClass(job.sector)}`}
+                  >
                     {job.sector}
                   </span>
                   <h2 className="mt-4 text-2xl font-semibold">{job.title}</h2>
                   <p className="mt-2 text-sm font-medium text-black/65">{job.company}</p>
                 </div>
-                <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
-                  {formatDate(job.postedAt)}
-                </span>
+                <div className="space-y-2 text-right">
+                  <span className="block rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
+                    Pubblicato {formatDate(job.postedAt)}
+                  </span>
+                  <span className="block rounded-full bg-[#f9dfd5] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#8c3216]">
+                    Scade {formatDate(job.expiresAt)}
+                  </span>
+                </div>
               </div>
 
               <p className="mt-5 text-sm leading-6 text-black/70">{job.summary}</p>
@@ -209,7 +222,7 @@ export function JobDashboard() {
                   rel="noreferrer"
                   className="rounded-full bg-clay px-4 py-2 font-semibold text-white"
                 >
-                  Apri fonte
+                  Apri offerta
                 </a>
               </div>
             </article>
