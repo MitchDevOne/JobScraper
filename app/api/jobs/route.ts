@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractKeywords } from "@/lib/server/cv-profile";
+import { buildCvProfile } from "@/lib/server/cv-profile";
 import { fetchJobs } from "@/lib/server/job-search";
-import { SectorType, SearchResponse, WorkMode } from "@/lib/types";
+import { LocationScope, SearchResponse, SectorType, WorkMode } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -12,19 +12,34 @@ function getFilters(searchParams: URLSearchParams) {
     q: searchParams.get("q") ?? "",
     workMode: (searchParams.get("workMode") ?? "all") as WorkMode | "all",
     includeRemote: searchParams.get("includeRemote") === "true",
-    city: searchParams.get("city") ?? "Torino"
+    location: searchParams.get("location") ?? "Torino",
+    locationScope: (searchParams.get("locationScope") ?? "metro") as LocationScope,
+    roleTargets: searchParams.getAll("roleTarget")
   };
+}
+
+async function parsePdfBuffer(buffer: Buffer) {
+  const { default: pdfParse } = await import("pdf-parse/lib/pdf-parse.js");
+  const parsed = await pdfParse(buffer);
+  return buildCvProfile(parsed.text);
 }
 
 export async function GET(request: NextRequest) {
   const filters = getFilters(request.nextUrl.searchParams);
-  const jobs = await fetchJobs(filters);
+  const { jobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters);
 
   const response: SearchResponse = {
     total: jobs.length,
     jobs,
     cvKeywords: [],
-    lastUpdatedAt: new Date().toISOString()
+    cvProfile: null,
+    lastUpdatedAt: new Date().toISOString(),
+    searchedLocation: filters.location ?? "",
+    searchedLocationScope: filters.locationScope ?? "metro",
+    consultedSources,
+    previewJobs,
+    suggestedRoles,
+    activeRoleTargets
   };
 
   return NextResponse.json(response);
@@ -37,26 +52,33 @@ export async function POST(request: NextRequest) {
     q: formData.get("q")?.toString() ?? "",
     workMode: (formData.get("workMode")?.toString() ?? "all") as WorkMode | "all",
     includeRemote: formData.get("includeRemote")?.toString() === "true",
-    city: formData.get("city")?.toString() ?? "Torino"
+    location: formData.get("location")?.toString() ?? "Torino",
+    locationScope: (formData.get("locationScope")?.toString() ?? "metro") as LocationScope,
+    roleTargets: JSON.parse(formData.get("roleTargets")?.toString() ?? "[]") as string[]
   };
 
   const file = formData.get("cv");
-  let cvKeywords: string[] = [];
+  let cvProfile = null;
 
   if (file instanceof File && file.size > 0 && file.type === "application/pdf") {
-    const { default: pdfParse } = await import("pdf-parse");
     const arrayBuffer = await file.arrayBuffer();
-    const parsed = await pdfParse(Buffer.from(arrayBuffer));
-    cvKeywords = extractKeywords(parsed.text);
+    cvProfile = await parsePdfBuffer(Buffer.from(arrayBuffer));
   }
 
-  const jobs = await fetchJobs(filters, cvKeywords);
+  const { jobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters, cvProfile);
 
   const response: SearchResponse = {
     total: jobs.length,
     jobs,
-    cvKeywords,
-    lastUpdatedAt: new Date().toISOString()
+    cvKeywords: cvProfile?.keywords ?? [],
+    cvProfile,
+    lastUpdatedAt: new Date().toISOString(),
+    searchedLocation: filters.location ?? "",
+    searchedLocationScope: filters.locationScope ?? "metro",
+    consultedSources,
+    previewJobs,
+    suggestedRoles,
+    activeRoleTargets
   };
 
   return NextResponse.json(response);

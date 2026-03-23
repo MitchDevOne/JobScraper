@@ -1,3 +1,5 @@
+import { sourceCatalog } from "@/lib/source-catalog";
+
 export type SourceAdapter = {
   id: string;
   label: string;
@@ -7,37 +9,16 @@ export type SourceAdapter = {
   notes: string;
 };
 
-export const sourceAdapters: SourceAdapter[] = [
-  {
-    id: "comune-torino",
-    label: "Comune di Torino",
-    sector: "pubblico",
-    strategy: "html-parser",
-    enabled: false,
-    notes: "Buona candidata per i primi parser dedicati al settore pubblico."
-  },
-  {
-    id: "csi-piemonte",
-    label: "CSI Piemonte",
-    sector: "pubblico",
-    strategy: "manual-import",
-    enabled: false,
-    notes: "Si puo partire con ingestione manuale o feed strutturati."
-  },
-  {
-    id: "reply",
-    label: "Reply Careers",
-    sector: "privato",
-    strategy: "html-parser",
-    enabled: false,
-    notes: "Sito aziendale adatto a una integrazione privata iniziale."
-  },
-  {
-    id: "intesa-sanpaolo",
-    label: "Intesa Sanpaolo Careers",
-    sector: "privato",
-    strategy: "html-parser",
-    enabled: false,
-    notes: "Fonte enterprise utile ma da verificare per stabilita markup."
-  }
-];
+export const sourceAdapters: SourceAdapter[] = sourceCatalog.map((source) => ({
+  id: source.id,
+  label: source.label,
+  sector: source.sector,
+  strategy:
+    source.strategy === "seed"
+      ? "manual-import"
+      : source.strategy === "json-api"
+        ? "api"
+        : "html-parser",
+  enabled: source.enabled,
+  notes: source.focus
+}));

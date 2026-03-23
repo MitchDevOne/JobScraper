@@ -15,7 +15,7 @@ export const privateJobsSeed: Job[] = [
     postedAt: "2026-03-20",
     expiresAt: null,
     discoveredAt: "2026-03-23",
-    tags: ["react", "typescript", "frontend"],
+    tags: ["react", "typescript", "frontend", "next.js"],
     summary: "Ruolo frontend con stack React e TypeScript, presenza in sede 2 giorni a settimana.",
     status: "nuova"
   },
@@ -33,7 +33,7 @@ export const privateJobsSeed: Job[] = [
     postedAt: "2026-03-18",
     expiresAt: null,
     discoveredAt: "2026-03-23",
-    tags: ["sql", "python", "data"],
+    tags: ["sql", "python", "data", "analytics"],
     summary: "Analisi dati e reporting su processi interni, team basato su Torino.",
     status: "vista"
   },
@@ -43,7 +43,7 @@ export const privateJobsSeed: Job[] = [
     company: "Prima Industrie",
     sector: "privato",
     location: "Collegno, Torino, Italia",
-    city: "Torino",
+    city: "Collegno",
     workMode: "on-site",
     source: "Company Careers",
     sourceType: "company-site",
@@ -51,7 +51,7 @@ export const privateJobsSeed: Job[] = [
     postedAt: "2026-03-19",
     expiresAt: null,
     discoveredAt: "2026-03-23",
-    tags: ["csharp", "automation", "industry"],
+    tags: ["c#", "automation", "industry", ".net"],
     summary: "Sviluppo software per sistemi industriali con sede nell'area torinese.",
     status: "salvata"
   },
@@ -59,7 +59,7 @@ export const privateJobsSeed: Job[] = [
     id: "csi-pmo",
     title: "Project Management Officer",
     company: "CSI Piemonte",
-    sector: "privato",
+    sector: "pubblico",
     location: "Torino, Piemonte, Italia",
     city: "Torino",
     workMode: "hybrid",
@@ -74,6 +74,60 @@ export const privateJobsSeed: Job[] = [
     status: "nuova"
   },
   {
+    id: "sorint-react-engineer",
+    title: "React Engineer",
+    company: "Sorint.Lab",
+    sector: "privato",
+    location: "Milano, Lombardia, Italia",
+    city: "Milano",
+    workMode: "hybrid",
+    source: "Company Careers",
+    sourceType: "company-site",
+    originalUrl: "https://careers.sorint.com/react-engineer-milano",
+    postedAt: "2026-03-22",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
+    tags: ["react", "typescript", "frontend", "agile"],
+    summary: "Ruolo frontend per prodotti enterprise con stack React e TypeScript, sede Milano.",
+    status: "nuova"
+  },
+  {
+    id: "engineering-java-analyst",
+    title: "Java Analyst Developer",
+    company: "Engineering",
+    sector: "privato",
+    location: "Roma, Lazio, Italia",
+    city: "Roma",
+    workMode: "hybrid",
+    source: "Company Careers",
+    sourceType: "company-site",
+    originalUrl: "https://www.eng.it/careers/java-analyst-developer-roma",
+    postedAt: "2026-03-17",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
+    tags: ["java", "spring", "backend", "analysis"],
+    summary: "Analisi e sviluppo Java Spring per clienti enterprise con team basato a Roma.",
+    status: "nuova"
+  },
+  {
+    id: "hera-data-engineer-bologna",
+    title: "Data Engineer",
+    company: "Gruppo Hera",
+    sector: "privato",
+    location: "Bologna, Emilia-Romagna, Italia",
+    city: "Bologna",
+    workMode: "hybrid",
+    source: "Company Careers",
+    sourceType: "company-site",
+    originalUrl: "https://www.gruppohera.it/careers/data-engineer-bologna",
+    postedAt: "2026-03-16",
+    expiresAt: null,
+    discoveredAt: "2026-03-23",
+    tags: ["data", "python", "sql", "etl"],
+    summary: "Pipeline dati e analytics per team innovation con presenza su Bologna.",
+    status: "nuova"
+  },
+  {
     id: "alten-backend-remote",
     title: "Backend Developer",
     company: "Alten Italia",
@@ -81,32 +135,14 @@ export const privateJobsSeed: Job[] = [
     location: "Torino, Piemonte, Italia",
     city: "Torino",
     workMode: "remote",
-    source: "Indeed mirror",
-    sourceType: "aggregator",
-    originalUrl: "https://it.indeed.com/viewjob?jk=backend-developer-remote-torino",
+    source: "Company Careers",
+    sourceType: "company-site",
+    originalUrl: "https://www.alten.it/carriere/backend-developer-torino",
     postedAt: "2026-03-21",
     expiresAt: null,
     discoveredAt: "2026-03-23",
     tags: ["java", "spring", "backend"],
     summary: "Ruolo fully remote, mantenuto solo per testare l'esclusione automatica.",
     status: "nuova"
-  }
-];
-
-export const sources = [
-  {
-    name: "Company Careers",
-    focus: "Siti aziendali selezionati con pagine stabili e piu facili da mantenere.",
-    status: "MVP"
-  },
-  {
-    name: "Comune di Torino - concorsi",
-    focus: "Scraping live della fonte pubblica ufficiale, con filtro solo bandi ancora attivi.",
-    status: "Live"
-  },
-  {
-    name: "Indeed / aggregatori",
-    focus: "Da usare come supporto o discovery, non come fondazione del prodotto.",
-    status: "Later"
   }
 ];
