@@ -24,6 +24,7 @@ type InpaListing = {
 
 type InpaSearchResponse = {
   content?: InpaListing[];
+  totalPages?: number;
 };
 
 const regionIdsByLocation: Record<string, string> = {
@@ -153,8 +154,9 @@ function buildTags(listing: InpaListing) {
 
 export async function scrapeInpaJobs(location: string): Promise<Job[]> {
   const regionId = guessRegionId(location);
+  const normalizedLocation = normalize(location);
   const body = {
-    text: location.includes("Torino") || location.includes("torino") ? "Torino" : "",
+    text: normalizedLocation.includes("torino") ? "" : location,
     categoriaId: null,
     regioneId: regionId,
     status: ["OPEN"],
@@ -169,24 +171,34 @@ export async function scrapeInpaJobs(location: string): Promise<Job[]> {
     enteRiferimentoName: ""
   };
 
-  const response = await fetch(`${API_BASE_URL}/concorsi-smart/api/concorso-public-area/search-better?page=0&size=24`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "user-agent": USER_AGENT
-    },
-    body: JSON.stringify(body),
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error(`inPA jobs fetch failed: ${response.status}`);
-  }
-
-  const payload = (await response.json()) as InpaSearchResponse;
   const today = new Date().toISOString().slice(0, 10);
+  const pageSize = 60;
+  const maxPages = 4;
+  const pages = await Promise.all(
+    Array.from({ length: maxPages }, async (_, page) => {
+      const response = await fetch(
+        `${API_BASE_URL}/concorsi-smart/api/concorso-public-area/search-better?page=${page}&size=${pageSize}`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "user-agent": USER_AGENT
+          },
+          body: JSON.stringify(body),
+          next: { revalidate: 0 }
+        }
+      );
 
-  return (payload.content ?? [])
+      if (!response.ok) {
+        throw new Error(`inPA jobs fetch failed: ${response.status}`);
+      }
+
+      return (await response.json()) as InpaSearchResponse;
+    })
+  );
+
+  return pages
+    .flatMap((payload) => payload.content ?? [])
     .filter((listing) => listing.calculatedStatus === "OPEN" && !!listing.id && !!listing.titolo && !!listing.dataScadenza)
     .filter((listing) => (listing.dataScadenza ?? "").slice(0, 10) >= today)
     .map((listing) => {

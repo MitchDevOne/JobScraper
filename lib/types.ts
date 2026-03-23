@@ -22,6 +22,10 @@ export type Job = {
   status: JobStatus;
   relevanceScore?: number;
   matchReasons?: string[];
+  requirementHighlights?: string[];
+  requirementsText?: string | null;
+  paRequirementStatus?: "compatible" | "potential" | "incompatible";
+  requirementSourceUrl?: string | null;
 };
 
 export type JobFilters = {
@@ -48,6 +52,7 @@ export type CvProfile = {
 export type SearchResponse = {
   total: number;
   jobs: Job[];
+  publicPotentialJobs: Job[];
   cvKeywords: string[];
   cvProfile: CvProfile | null;
   lastUpdatedAt: string;

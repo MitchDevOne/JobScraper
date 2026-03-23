@@ -55,6 +55,30 @@ export const sourceCatalog: SourceCatalogEntry[] = [
     focus: "Portale trasparenza ufficiale per concorsi pubblici e procedure dell'area metropolitana."
   },
   {
+    id: "camera-commercio-torino",
+    label: "Camera di commercio di Torino - Selezioni pubbliche",
+    sector: "pubblico",
+    strategy: "html-parser",
+    reliability: "high",
+    coverage: "torino-city",
+    enabled: true,
+    officialUrl: "https://www.to.camcom.it/selezioni-corso",
+    statusLabel: "Live",
+    focus: "Fonte ufficiale della Camera di commercio di Torino per concorsi e selezioni aperte."
+  },
+  {
+    id: "regione-piemonte",
+    label: "Regione Piemonte - Bandi di concorso",
+    sector: "pubblico",
+    strategy: "html-parser",
+    reliability: "high",
+    coverage: "piemonte",
+    enabled: true,
+    officialUrl: "https://trasparenza.regione.piemonte.it/bandi-concorso",
+    statusLabel: "Live",
+    focus: "Fonte istituzionale regionale con procedure concorsuali, mobilita e selezioni della Regione Piemonte."
+  },
+  {
     id: "csi-piemonte",
     label: "CSI Piemonte - Avvisi di selezione",
     sector: "privato",

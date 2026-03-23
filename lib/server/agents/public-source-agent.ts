@@ -21,6 +21,10 @@ export function shouldIncludePublicSource(sourceId: string, filters: JobFilters)
       return isTorinoArea(filters.location);
     case "citta-metropolitana-torino":
       return isTorinoArea(filters.location) && (filters.locationScope ?? "metro") === "metro";
+    case "camera-commercio-torino":
+      return isTorinoArea(filters.location);
+    case "regione-piemonte":
+      return isTorinoArea(filters.location);
     default:
       return false;
   }

@@ -63,15 +63,14 @@ function titleCase(input: string) {
 }
 
 function sectorBadgeClass(sector: SectorType) {
-  return sector === "pubblico"
-    ? "bg-[#d7e7ff] text-[#113a7a]"
-    : "bg-mist text-pine";
+  return sector === "pubblico" ? "bg-[#d7e7ff] text-[#113a7a]" : "bg-mist text-pine";
 }
 
 function setResponseState(
   payload: SearchResponse,
   setters: {
     setJobs: (jobs: Job[]) => void;
+    setPublicPotentialJobs: (jobs: Job[]) => void;
     setTotal: (total: number) => void;
     setCvKeywords: (keywords: string[]) => void;
     setCvProfile: (profile: CvProfile | null) => void;
@@ -83,6 +82,7 @@ function setResponseState(
   }
 ) {
   setters.setJobs(payload.jobs);
+  setters.setPublicPotentialJobs(payload.publicPotentialJobs);
   setters.setTotal(payload.total);
   setters.setCvKeywords(payload.cvKeywords);
   setters.setCvProfile(payload.cvProfile);
@@ -126,6 +126,7 @@ function EmptyPill({ text }: { text: string }) {
 
 export function JobDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [publicPotentialJobs, setPublicPotentialJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -170,6 +171,7 @@ export function JobDashboard() {
       const payload = (await response.json()) as SearchResponse;
       setResponseState(payload, {
         setJobs,
+        setPublicPotentialJobs,
         setTotal,
         setCvKeywords,
         setCvProfile,
@@ -199,6 +201,7 @@ export function JobDashboard() {
     const payload = (await response.json()) as SearchResponse;
     setResponseState(payload, {
       setJobs,
+      setPublicPotentialJobs,
       setTotal,
       setCvKeywords,
       setCvProfile,
@@ -227,6 +230,7 @@ export function JobDashboard() {
 
         setResponseState(payload, {
           setJobs,
+          setPublicPotentialJobs,
           setTotal,
           setCvKeywords,
           setCvProfile,
@@ -242,6 +246,7 @@ export function JobDashboard() {
         }
 
         setJobs([]);
+        setPublicPotentialJobs([]);
         setTotal(0);
         setCvKeywords([]);
         setCvProfile(null);
@@ -274,6 +279,7 @@ export function JobDashboard() {
       setAnalysisReady(true);
     } catch {
       setJobs([]);
+      setPublicPotentialJobs([]);
       setTotal(0);
       setCvKeywords([]);
       setCvProfile(null);
@@ -352,19 +358,38 @@ export function JobDashboard() {
           </div>
         ) : null}
 
+        {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
+          <div className="mt-4 rounded-2xl bg-[#f6f7fb] p-3 text-xs text-black/65">
+            <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
+            <p className="mt-2 leading-5">{truncateText(job.requirementHighlights[0], 180)}</p>
+          </div>
+        ) : null}
+
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
           <div>
             <p>{job.location}</p>
             <p className="mt-1 uppercase tracking-[0.14em]">{job.workMode}</p>
           </div>
-          <a
-            href={job.originalUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-full bg-clay px-4 py-2 font-semibold text-white"
-          >
-            Apri offerta
-          </a>
+          <div className="flex items-center gap-3">
+            {job.sector === "pubblico" && job.requirementSourceUrl ? (
+              <a
+                href={job.requirementSourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-black/10 px-4 py-2 font-semibold text-black/70"
+              >
+                Apri bando
+              </a>
+            ) : null}
+            <a
+              href={job.originalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full bg-clay px-4 py-2 font-semibold text-white"
+            >
+              Apri offerta
+            </a>
+          </div>
         </div>
       </article>
     );
@@ -521,7 +546,7 @@ export function JobDashboard() {
           <div className="rounded-[28px] bg-ink p-6 text-white">
             <p className="text-sm uppercase tracking-[0.2em] text-white/60">Profilo CV + fonti</p>
             <div className="mt-6 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div>
                   <p className="text-5xl font-bold">{total}</p>
                   <p className="text-sm text-white/70">risultati totali compatibili</p>
@@ -529,6 +554,10 @@ export function JobDashboard() {
                 <div>
                   <p className="text-3xl font-bold">{publicJobs.length}</p>
                   <p className="text-sm text-white/70">pubblici</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold">{publicPotentialJobs.length}</p>
+                  <p className="text-sm text-white/70">PA da verificare</p>
                 </div>
                 <div>
                   <p className="text-3xl font-bold">{privateJobs.length}</p>
@@ -558,7 +587,11 @@ export function JobDashboard() {
                 </div>
               </InfoAccordion>
 
-              <InfoAccordion title="Profili estratti dal CV" subtitle="Titoli, skill, esperienza e studio normalizzati" defaultOpen>
+              <InfoAccordion
+                title="Profili estratti dal CV"
+                subtitle="Titoli, skill, esperienza e studio normalizzati"
+                defaultOpen
+              >
                 {cvProfile ? (
                   <div className="grid gap-4 text-sm text-white/75">
                     <div>
@@ -696,9 +729,15 @@ export function JobDashboard() {
               </div>
             ))}
           </div>
-        ) : jobs.length > 0 ? (
+        ) : jobs.length > 0 || publicPotentialJobs.length > 0 ? (
           <>
             {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef5ff]")}
+            {renderJobSection(
+              "PA Potenzialmente Compatibili",
+              "Verifica titoli di studio e requisiti specifici",
+              publicPotentialJobs,
+              "bg-[#f5f0ff]"
+            )}
             {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#fbf3ea]")}
           </>
         ) : (

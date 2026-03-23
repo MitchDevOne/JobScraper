@@ -6,6 +6,7 @@ import {
   normalizeRoleLabel,
   textContainsPhrase
 } from "@/lib/server/agents/cv-intelligence-agent";
+import { extractPublicAdministrationRequirements } from "@/lib/server/agents/pa-requirements-extractor";
 import { evaluatePrivateExperienceAlignment } from "@/lib/server/agents/private-experience-agent";
 import { evaluatePublicAdministrationRequirements } from "@/lib/server/agents/public-requirements-agent";
 import { privateJobsSeed } from "@/lib/data/private-jobs";
@@ -14,6 +15,7 @@ import { CvProfile, Job, JobFilters } from "@/lib/types";
 
 type SearchJobsResult = {
   jobs: Job[];
+  publicPotentialJobs: Job[];
   consultedSources: string[];
   previewJobs: Job[];
   suggestedRoles: string[];
@@ -160,7 +162,9 @@ function buildJobSignals(
   locationScope: JobFilters["locationScope"]
 ) {
   const titleLower = normalizeForMatch(job.title);
-  const detailsLower = normalizeForMatch([job.summary, ...job.tags].join(" "));
+  const detailsLower = normalizeForMatch(
+    [job.summary, ...job.tags, ...(job.requirementHighlights ?? []), job.requirementsText ?? ""].join(" ")
+  );
   const expandedCvTitles = expandRoleTerms(cvProfile?.titles ?? []);
   const expandedCvSkills = expandSkillTerms(cvProfile?.skills ?? []);
   const expandedStudyAreas = expandStudyAreaTerms(cvProfile?.studyAreas ?? []);
@@ -223,7 +227,7 @@ function buildMatchReasons(
 ) {
   const reasons: string[] = [];
   const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
-  const publicFit = evaluatePublicAdministrationRequirements(signals, cvProfile);
+  const publicFit = evaluatePublicAdministrationRequirements(signals, job, cvProfile);
   const privateFit = evaluatePrivateExperienceAlignment(
     {
       ...signals,
@@ -262,7 +266,7 @@ function computeScore(
   const titleText = normalizeForMatch(job.title);
   const detailsText = normalizeForMatch([job.company, job.summary, job.location, ...job.tags].join(" "));
   const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
-  const publicFit = evaluatePublicAdministrationRequirements(signals, cvProfile);
+  const publicFit = evaluatePublicAdministrationRequirements(signals, job, cvProfile);
   const privateFit = evaluatePrivateExperienceAlignment(
     {
       ...signals,
@@ -277,9 +281,9 @@ function computeScore(
   score += scoreTokenMatches(detailsText, queryTokens, 5);
 
   if (job.sector === "pubblico") {
-    score += signals.roleMatches * 12;
-    score += signals.skillMatches * 6;
-    score += signals.experienceMatches * 5;
+    score += signals.roleMatches * 9;
+    score += signals.skillMatches * 5;
+    score += signals.experienceMatches * 4;
     score += publicFit.scoreBoost;
   } else {
     score += privateFit.scoreBoost;
@@ -354,6 +358,31 @@ function dedupeJobs(jobs: Job[]) {
   });
 }
 
+async function enrichPublicJobsWithRequirements(jobs: Job[], cvProfile: CvProfile | null) {
+  if (!cvProfile) {
+    return jobs;
+  }
+
+  const publicJobs = jobs.filter((job) => job.sector === "pubblico").slice(0, 40);
+  const enrichedEntries = await Promise.all(
+    publicJobs.map(async (job) => {
+      const requirements = await extractPublicAdministrationRequirements(job);
+      return [
+        job.id,
+        {
+          ...job,
+          requirementsText: requirements.requirementsText,
+          requirementHighlights: requirements.requirementHighlights,
+          requirementSourceUrl: requirements.requirementSourceUrl
+        } satisfies Job
+      ] as const;
+    })
+  );
+  const enrichedById = new Map(enrichedEntries);
+
+  return jobs.map((job) => enrichedById.get(job.id) ?? job);
+}
+
 function passesCvFitGate(
   job: Job,
   queryTokens: string[],
@@ -369,7 +398,7 @@ function passesCvFitGate(
   const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
 
   if (job.sector === "pubblico") {
-    return evaluatePublicAdministrationRequirements(signals, cvProfile).passes;
+    return evaluatePublicAdministrationRequirements(signals, job, cvProfile).passes;
   }
 
   return evaluatePrivateExperienceAlignment(
@@ -380,6 +409,23 @@ function passesCvFitGate(
     },
     cvProfile
   ).passes;
+}
+
+function isPotentialPublicFit(
+  job: Job,
+  queryTokens: string[],
+  roleTargets: string[],
+  cvProfile: CvProfile | null,
+  requestedLocation: string,
+  locationScope: JobFilters["locationScope"]
+) {
+  if (!cvProfile || job.sector !== "pubblico") {
+    return false;
+  }
+
+  const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
+  const evaluation = evaluatePublicAdministrationRequirements(signals, job, cvProfile);
+  return !evaluation.passes && evaluation.potentialPasses;
 }
 
 export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null = null): Promise<SearchJobsResult> {
@@ -393,7 +439,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
       .filter((source) => source.isRelevant(filters))
       .map(async (source) => source.fetcher(filters).catch(() => []))
   ).then((items) => items.flat());
-  const jobs = dedupeJobs([...liveJobs, ...privateJobsSeed]);
+  const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...privateJobsSeed]), cvProfile);
   const cvTokens = cvProfile
     ? [
         ...cvProfile.keywords.map(normalizeForMatch),
@@ -441,7 +487,8 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     .map((job) => ({
       ...job,
       relevanceScore: computeScore(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
-      matchReasons: buildMatchReasons(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope)
+      matchReasons: buildMatchReasons(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
+      paRequirementStatus: job.sector === "pubblico" ? ("compatible" as const) : job.paRequirementStatus
     }))
     .sort((a, b) => {
       if ((b.relevanceScore ?? 0) !== (a.relevanceScore ?? 0)) {
@@ -451,8 +498,38 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
       return b.postedAt.localeCompare(a.postedAt);
     });
 
+  const publicPotentialJobs = jobs
+    .filter((job) => {
+      if (job.sector !== "pubblico") {
+        return false;
+      }
+
+      if (filters.sector === "privato") {
+        return false;
+      }
+
+      if (filters.workMode && filters.workMode !== "all" && job.workMode !== filters.workMode) {
+        return false;
+      }
+
+      if (requestedLocation && !matchesLocation(job, requestedLocation, locationScope)) {
+        return false;
+      }
+
+      return isPotentialPublicFit(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
+    })
+    .map((job) => ({
+      ...job,
+      relevanceScore: computeScore(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
+      matchReasons: buildMatchReasons(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
+      paRequirementStatus: "potential" as const
+    }))
+    .sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0))
+    .slice(0, 12);
+
   return {
     jobs: filteredJobs,
+    publicPotentialJobs,
     consultedSources: buildConsultedSources(jobs, requestedLocation, locationScope),
     previewJobs: filteredJobs.slice(0, 3),
     suggestedRoles: buildSuggestedRoles(cvProfile, filteredJobs),

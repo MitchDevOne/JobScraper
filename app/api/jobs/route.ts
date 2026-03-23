@@ -26,11 +26,12 @@ async function parsePdfBuffer(buffer: Buffer) {
 
 export async function GET(request: NextRequest) {
   const filters = getFilters(request.nextUrl.searchParams);
-  const { jobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters);
+  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters);
 
   const response: SearchResponse = {
     total: jobs.length,
     jobs,
+    publicPotentialJobs,
     cvKeywords: [],
     cvProfile: null,
     lastUpdatedAt: new Date().toISOString(),
@@ -65,11 +66,12 @@ export async function POST(request: NextRequest) {
     cvProfile = await parsePdfBuffer(Buffer.from(arrayBuffer));
   }
 
-  const { jobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters, cvProfile);
+  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters, cvProfile);
 
   const response: SearchResponse = {
     total: jobs.length,
     jobs,
+    publicPotentialJobs,
     cvKeywords: cvProfile?.keywords ?? [],
     cvProfile,
     lastUpdatedAt: new Date().toISOString(),
