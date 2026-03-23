@@ -365,8 +365,11 @@ async function enrichPublicJobsWithRequirements(jobs: Job[], cvProfile: CvProfil
     return jobs;
   }
 
-  const publicJobs = jobs.filter((job) => job.sector === "pubblico").slice(0, 40);
-  const enrichedEntries = await Promise.all(
+  const publicJobs = jobs
+    .filter((job) => job.sector === "pubblico")
+    .sort((a, b) => b.postedAt.localeCompare(a.postedAt))
+    .slice(0, 8);
+  const enrichedEntries = await Promise.allSettled(
     publicJobs.map(async (job) => {
       const requirements = await extractPublicAdministrationRequirements(job);
       return [
@@ -380,7 +383,10 @@ async function enrichPublicJobsWithRequirements(jobs: Job[], cvProfile: CvProfil
       ] as const;
     })
   );
-  const enrichedById = new Map(enrichedEntries);
+  const enrichedById = new Map(
+    enrichedEntries
+      .flatMap((entry) => (entry.status === "fulfilled" ? [entry.value] : []))
+  );
 
   return jobs.map((job) => enrichedById.get(job.id) ?? job);
 }

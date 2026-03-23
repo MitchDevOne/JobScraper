@@ -6,6 +6,8 @@ type RequirementsExtraction = {
   requirementSourceUrl: string | null;
 };
 
+const FETCH_TIMEOUT_MS = 5000;
+
 function stripTags(input: string) {
   return input.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -57,7 +59,8 @@ function extractRelevantParagraphs(text: string) {
 async function parsePdfUrl(url: string) {
   const response = await fetch(url, {
     headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
   });
 
   if (!response.ok) {
@@ -73,7 +76,8 @@ async function parsePdfUrl(url: string) {
 async function fetchHtml(url: string) {
   const response = await fetch(url, {
     headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
+    next: { revalidate: 0 },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
   });
 
   if (!response.ok) {
