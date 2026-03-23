@@ -54,13 +54,13 @@ const titleAliases: Record<string, string[]> = {
     "backend engineer"
   ],
   "full stack developer": ["full stack developer", "fullstack developer", "sviluppatore full stack"],
-  "software engineer": ["software engineer", "application engineer", "developer", "sviluppatore software"],
+  "software engineer": ["software engineer", "application engineer", "sviluppatore software"],
   "program analyst": ["program analyst", "analyst programmer", "analista programmatore", "technical analyst"],
   "data analyst": ["data analyst", "data specialist", "bi analyst", "analista dati", "reporting specialist"],
   "data engineer": ["data engineer", "etl developer", "analytics engineer"],
-  "business analyst": ["business analyst", "analista di business", "system analyst", "product analyst"],
+  "business analyst": ["business analyst", "analista di business", "system analyst"],
   "business developer": ["business developer", "business development", "partnership manager", "growth manager"],
-  "project manager": ["project manager", "program manager", "delivery manager", "service manager"],
+  "project manager": ["project manager", "program manager", "delivery manager"],
   "project management officer": [
     "project management officer",
     "pmo",
@@ -69,7 +69,7 @@ const titleAliases: Record<string, string[]> = {
     "program coordinator",
     "specialista pianificazione e supporto"
   ],
-  "product manager": ["product manager", "digital product manager", "service manager"],
+  "product manager": ["product manager", "digital product manager", "product owner"],
   "cloud engineer": ["cloud engineer", "cloud developer", "cloud specialist"],
   "devops engineer": ["devops engineer", "devops specialist"],
   "information security specialist": [
@@ -144,7 +144,7 @@ const studyAreaAliases: Record<string, string[]> = {
     "russo",
     "tedesco"
   ],
-  software: ["python", "sviluppo software", "software", "program analyst"],
+  software: ["sviluppo software", "software", "ingegneria informatica", "informatica"],
   research: ["ricerca", "research", "sperimentale", "scientifica"]
 };
 
@@ -319,4 +319,41 @@ export function buildEnhancedCvProfile(text: string): CvProfile {
     yearsOfExperience,
     preferredLocations
   };
+}
+
+export function inferPreferredPrivateRoleFamilies(cvProfile: CvProfile | null) {
+  const roles = (cvProfile?.titles ?? []).map(normalizeRoleLabel);
+  const families = new Set<string>();
+
+  for (const role of roles) {
+    if (role.includes("data")) {
+      families.add("data");
+    }
+
+    if (role.includes("product")) {
+      families.add("product");
+    }
+
+    if (role.includes("business")) {
+      families.add("business");
+    }
+
+    if (role.includes("project")) {
+      families.add("project");
+    }
+
+    if (role.includes("developer") || role.includes("engineer") || role.includes("software")) {
+      families.add("developer");
+    }
+  }
+
+  if ((cvProfile?.experienceAreas ?? []).includes("data")) {
+    families.add("data");
+  }
+
+  if ((cvProfile?.studyAreas ?? []).includes("business administration")) {
+    families.add("business");
+  }
+
+  return [...families];
 }

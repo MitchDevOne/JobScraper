@@ -234,6 +234,7 @@ function buildMatchReasons(
       developerOnlyJob: isDeveloperFamilyTitle(job.title),
       developerProfile: hasDeveloperFamilyProfile(cvProfile)
     },
+    job,
     cvProfile
   );
 
@@ -273,6 +274,7 @@ function computeScore(
       developerOnlyJob: isDeveloperFamilyTitle(job.title),
       developerProfile: hasDeveloperFamilyProfile(cvProfile)
     },
+    job,
     cvProfile
   );
 
@@ -407,6 +409,7 @@ function passesCvFitGate(
       developerOnlyJob: isDeveloperFamilyTitle(job.title),
       developerProfile: hasDeveloperFamilyProfile(cvProfile)
     },
+    job,
     cvProfile
   ).passes;
 }
@@ -488,7 +491,19 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
       ...job,
       relevanceScore: computeScore(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
       matchReasons: buildMatchReasons(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
-      paRequirementStatus: job.sector === "pubblico" ? ("compatible" as const) : job.paRequirementStatus
+      paRequirementStatus: job.sector === "pubblico" ? ("compatible" as const) : job.paRequirementStatus,
+      privateFitStatus:
+        job.sector === "privato"
+          ? evaluatePrivateExperienceAlignment(
+              {
+                ...buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope),
+                developerOnlyJob: isDeveloperFamilyTitle(job.title),
+                developerProfile: hasDeveloperFamilyProfile(cvProfile)
+              },
+              job,
+              cvProfile
+            ).status
+          : job.privateFitStatus
     }))
     .sort((a, b) => {
       if ((b.relevanceScore ?? 0) !== (a.relevanceScore ?? 0)) {

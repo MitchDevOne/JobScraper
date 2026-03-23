@@ -365,6 +365,15 @@ export function JobDashboard() {
           </div>
         ) : null}
 
+        {job.sector === "privato" && job.privateFitStatus === "partial" ? (
+          <div className="mt-4 rounded-2xl bg-[#eef2ff] p-3 text-xs text-[#3730a3]">
+            <p className="font-semibold uppercase tracking-[0.12em]">Allineamento parziale</p>
+            <p className="mt-2 leading-5">
+              La posizione condivide alcuni segnali con il CV, ma non combacia totalmente con esperienza e titoli principali.
+            </p>
+          </div>
+        ) : null}
+
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
           <div>
             <p>{job.location}</p>

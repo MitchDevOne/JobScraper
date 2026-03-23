@@ -25,6 +25,7 @@ export type Job = {
   requirementHighlights?: string[];
   requirementsText?: string | null;
   paRequirementStatus?: "compatible" | "potential" | "incompatible";
+  privateFitStatus?: "compatible" | "partial" | "weak";
   requirementSourceUrl?: string | null;
 };
 
