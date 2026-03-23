@@ -63,7 +63,7 @@ function titleCase(input: string) {
 }
 
 function sectorBadgeClass(sector: SectorType) {
-  return sector === "pubblico" ? "bg-[#d7e7ff] text-[#113a7a]" : "bg-mist text-pine";
+  return sector === "pubblico" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#ede9fe] text-[#5b21b6]";
 }
 
 function setResponseState(
@@ -329,7 +329,7 @@ export function JobDashboard() {
             <span className="block rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
               Pubblicato {formatDate(job.postedAt)}
             </span>
-            <span className="block rounded-full bg-[#f9dfd5] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#8c3216]">
+            <span className="block rounded-full bg-[#ede9fe] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#6d28d9]">
               {job.expiresAt ? `Scade ${formatDate(job.expiresAt)}` : "Scadenza non indicata"}
             </span>
           </div>
@@ -350,7 +350,7 @@ export function JobDashboard() {
             {job.matchReasons.map((reason) => (
               <span
                 key={reason}
-                className="rounded-full bg-[#efe3da] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#8c4a2f]"
+                className="rounded-full bg-[#e0e7ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#4338ca]"
               >
                 {reason}
               </span>
@@ -359,7 +359,7 @@ export function JobDashboard() {
         ) : null}
 
         {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
-          <div className="mt-4 rounded-2xl bg-[#f6f7fb] p-3 text-xs text-black/65">
+          <div className="mt-4 rounded-2xl bg-[#f5f3ff] p-3 text-xs text-black/65">
             <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
             <p className="mt-2 leading-5">{truncateText(job.requirementHighlights[0], 180)}</p>
           </div>
@@ -731,14 +731,14 @@ export function JobDashboard() {
           </div>
         ) : jobs.length > 0 || publicPotentialJobs.length > 0 ? (
           <>
-            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef5ff]")}
+            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eff6ff]")}
             {renderJobSection(
               "PA Potenzialmente Compatibili",
               "Verifica titoli di studio e requisiti specifici",
               publicPotentialJobs,
-              "bg-[#f5f0ff]"
+              "bg-[#f5f3ff]"
             )}
-            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#fbf3ea]")}
+            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#eef2ff]")}
           </>
         ) : (
           <div className="col-span-full rounded-[28px] border border-dashed border-black/20 bg-white/65 p-8 text-center">

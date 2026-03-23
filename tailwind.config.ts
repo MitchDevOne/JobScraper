@@ -9,14 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        sand: "#f4efe6",
-        ink: "#141414",
-        pine: "#123524",
-        clay: "#b44c31",
-        mist: "#d8e6df"
+        sand: "#eef2ff",
+        ink: "#0f172a",
+        pine: "#4338ca",
+        clay: "#6366f1",
+        mist: "#e0e7ff"
       },
       boxShadow: {
-        card: "0 18px 50px rgba(20, 20, 20, 0.12)"
+        card: "0 24px 60px rgba(79, 70, 229, 0.16)"
       }
     }
   },

@@ -18,7 +18,7 @@ export function SourceRoadmap() {
     <section className="mx-auto max-w-7xl px-6 pb-20">
       <div className="grid gap-4 lg:grid-cols-3">
         {sourceCatalog.filter((source) => source.enabled).map((source) => (
-          <article key={source.id} className="rounded-[28px] border border-black/10 bg-[#fffaf4] p-6 shadow-card">
+          <article key={source.id} className="rounded-[28px] border border-[#c7d2fe]/80 bg-white/80 p-6 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/50">
               {source.statusLabel}
             </p>
