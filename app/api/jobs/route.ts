@@ -26,7 +26,8 @@ async function parsePdfBuffer(buffer: Buffer) {
 
 export async function GET(request: NextRequest) {
   const filters = getFilters(request.nextUrl.searchParams);
-  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters);
+  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
+    await fetchJobs(filters);
 
   const response: SearchResponse = {
     total: jobs.length,
@@ -40,7 +41,8 @@ export async function GET(request: NextRequest) {
     consultedSources,
     previewJobs,
     suggestedRoles,
-    activeRoleTargets
+    activeRoleTargets,
+    sourceFetchMetrics
   };
 
   return NextResponse.json(response);
@@ -66,7 +68,8 @@ export async function POST(request: NextRequest) {
     cvProfile = await parsePdfBuffer(Buffer.from(arrayBuffer));
   }
 
-  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets } = await fetchJobs(filters, cvProfile);
+  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
+    await fetchJobs(filters, cvProfile);
 
   const response: SearchResponse = {
     total: jobs.length,
@@ -80,7 +83,8 @@ export async function POST(request: NextRequest) {
     consultedSources,
     previewJobs,
     suggestedRoles,
-    activeRoleTargets
+    activeRoleTargets,
+    sourceFetchMetrics
   };
 
   return NextResponse.json(response);

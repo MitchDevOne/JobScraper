@@ -10,8 +10,8 @@ import { extractPublicAdministrationRequirements } from "@/lib/server/agents/pa-
 import { evaluatePrivateExperienceAlignment } from "@/lib/server/agents/private-experience-agent";
 import { evaluatePublicAdministrationRequirements } from "@/lib/server/agents/public-requirements-agent";
 import { privateJobsSeed } from "@/lib/data/private-jobs";
-import { liveSourceRegistry } from "@/lib/server/source-registry";
-import { CvProfile, Job, JobFilters } from "@/lib/types";
+import { getEligibleSourceRegistryEntries } from "@/lib/server/source-registry";
+import { CvProfile, Job, JobFilters, SourceFetchMetrics } from "@/lib/types";
 
 type SearchJobsResult = {
   jobs: Job[];
@@ -20,6 +20,7 @@ type SearchJobsResult = {
   previewJobs: Job[];
   suggestedRoles: string[];
   activeRoleTargets: string[];
+  sourceFetchMetrics: SourceFetchMetrics[];
 };
 
 const studyAreaSynonyms: Record<string, string[]> = {
@@ -360,6 +361,10 @@ function dedupeJobs(jobs: Job[]) {
   });
 }
 
+function buildJobDedupeKey(job: Job) {
+  return normalizeForMatch([job.title, job.company, job.location, job.originalUrl].join("|"));
+}
+
 async function enrichPublicJobsWithRequirements(jobs: Job[], cvProfile: CvProfile | null) {
   if (!cvProfile) {
     return jobs;
@@ -443,11 +448,48 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const activeRoleTargets = aggregateRoleLabels(filters.roleTargets ?? [], 12);
   const roleTargets = expandRoleTerms(activeRoleTargets);
   const queryTokens = tokenize(filters.q ?? "");
-  const liveJobs = await Promise.all(
-    liveSourceRegistry
-      .filter((source) => source.isRelevant(filters))
-      .map(async (source) => source.fetcher(filters).catch(() => []))
-  ).then((items) => items.flat());
+  const sourceEntries = getEligibleSourceRegistryEntries(filters, cvProfile);
+  const liveResults = await Promise.all(
+    sourceEntries.map(async (source) => {
+      const startedAt = Date.now();
+
+      try {
+        const jobs = await source.fetcher?.(source.query, filters);
+        const dedupeKeys = new Set((jobs ?? []).map(buildJobDedupeKey));
+
+        return {
+          jobs: jobs ?? [],
+          metric: {
+            sourceId: source.id,
+            sourceLabel: source.label,
+            fetchedJobs: jobs?.length ?? 0,
+            validJobs: jobs?.length ?? 0,
+            dedupedJobs: dedupeKeys.size,
+            durationMs: Date.now() - startedAt,
+            success: true,
+            query: source.query
+          } satisfies SourceFetchMetrics
+        };
+      } catch (error) {
+        return {
+          jobs: [],
+          metric: {
+            sourceId: source.id,
+            sourceLabel: source.label,
+            fetchedJobs: 0,
+            validJobs: 0,
+            dedupedJobs: 0,
+            durationMs: Date.now() - startedAt,
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown source fetch error",
+            query: source.query
+          } satisfies SourceFetchMetrics
+        };
+      }
+    })
+  );
+  const liveJobs = liveResults.flatMap((result) => result.jobs);
+  const sourceFetchMetrics = liveResults.map((result) => result.metric);
   const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...privateJobsSeed]), cvProfile);
   const cvTokens = cvProfile
     ? [
@@ -554,6 +596,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     consultedSources: buildConsultedSources(jobs, requestedLocation, locationScope),
     previewJobs: filteredJobs.slice(0, 3),
     suggestedRoles: buildSuggestedRoles(cvProfile, filteredJobs),
-    activeRoleTargets
+    activeRoleTargets,
+    sourceFetchMetrics
   };
 }

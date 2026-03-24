@@ -1,4 +1,4 @@
-import { sourceCatalog } from "@/lib/source-catalog";
+import { sourceRegistry } from "@/lib/server/source-registry";
 
 export type SourceAdapter = {
   id: string;
@@ -9,16 +9,16 @@ export type SourceAdapter = {
   notes: string;
 };
 
-export const sourceAdapters: SourceAdapter[] = sourceCatalog.map((source) => ({
+export const sourceAdapters: SourceAdapter[] = sourceRegistry.map((source) => ({
   id: source.id,
   label: source.label,
   sector: source.sector,
   strategy:
-    source.strategy === "seed"
+    source.capabilities.retrievalMode === "seed" || source.capabilities.retrievalMode === "manual-import"
       ? "manual-import"
-      : source.strategy === "json-api"
+      : source.capabilities.retrievalMode === "public-api" || source.capabilities.retrievalMode === "partner-api"
         ? "api"
         : "html-parser",
   enabled: source.enabled,
-  notes: source.focus
+  notes: `${source.capabilities.originType} / ${source.capabilities.qualityTier}`
 }));
