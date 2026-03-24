@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { CvProfile, Job, LocationScope, SearchResponse, SectorType, WorkMode } from "@/lib/types";
+import { FormEvent, ReactNode, startTransition, useCallback, useEffect, useMemo, useState } from "react";
+import { CvProfile, Job, LocationScope, SearchResponse, SectorType, SourceFetchMetrics, WorkMode } from "@/lib/types";
 
 const SEARCH_LOCATION = "Torino";
 
@@ -50,6 +50,14 @@ function formatTimestamp(input: string) {
   }).format(new Date(input));
 }
 
+function formatDuration(input: number) {
+  if (input < 1000) {
+    return `${input} ms`;
+  }
+
+  return `${(input / 1000).toFixed(1)} s`;
+}
+
 function truncateText(input: string, maxLength = 170) {
   if (input.length <= maxLength) {
     return input;
@@ -63,10 +71,62 @@ function titleCase(input: string) {
 }
 
 function sectorBadgeClass(sector: SectorType) {
-  return sector === "pubblico" ? "bg-[#dbeafe] text-[#1d4ed8]" : "bg-[#ede9fe] text-[#5b21b6]";
+  return sector === "pubblico"
+    ? "bg-[#d6efe7] text-[#155b4a]"
+    : "bg-[#f4dfce] text-[#8c4b1f]";
 }
 
-function setResponseState(
+function workModeLabel(workMode: WorkMode) {
+  switch (workMode) {
+    case "remote":
+      return "Remote";
+    case "hybrid":
+      return "Hybrid";
+    default:
+      return "On-site";
+  }
+}
+
+function sourceMetricSummary(metrics: SourceFetchMetrics[]) {
+  const successful = metrics.filter((metric) => metric.success);
+  const failed = metrics.filter((metric) => !metric.success);
+  const avgDuration =
+    metrics.length > 0 ? Math.round(metrics.reduce((sum, metric) => sum + metric.durationMs, 0) / metrics.length) : 0;
+
+  return {
+    successful: successful.length,
+    failed: failed.length,
+    avgDuration
+  };
+}
+
+function resetSearchState(setters: {
+  setJobs: (jobs: Job[]) => void;
+  setPublicPotentialJobs: (jobs: Job[]) => void;
+  setTotal: (total: number) => void;
+  setCvKeywords: (keywords: string[]) => void;
+  setCvProfile: (profile: CvProfile | null) => void;
+  setLastUpdatedAt: (value: string) => void;
+  setConsultedSources: (sources: string[]) => void;
+  setPreviewJobs: (jobs: Job[]) => void;
+  setSuggestedRoles: (roles: string[]) => void;
+  setActiveRoleTargets: (roles: string[]) => void;
+  setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
+}) {
+  setters.setJobs([]);
+  setters.setPublicPotentialJobs([]);
+  setters.setTotal(0);
+  setters.setCvKeywords([]);
+  setters.setCvProfile(null);
+  setters.setLastUpdatedAt("");
+  setters.setConsultedSources([]);
+  setters.setPreviewJobs([]);
+  setters.setSuggestedRoles([]);
+  setters.setActiveRoleTargets([]);
+  setters.setSourceFetchMetrics([]);
+}
+
+function applyResponseState(
   payload: SearchResponse,
   setters: {
     setJobs: (jobs: Job[]) => void;
@@ -79,49 +139,108 @@ function setResponseState(
     setPreviewJobs: (jobs: Job[]) => void;
     setSuggestedRoles: (roles: string[]) => void;
     setActiveRoleTargets: (roles: string[]) => void;
+    setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
   }
 ) {
-  setters.setJobs(payload.jobs);
-  setters.setPublicPotentialJobs(payload.publicPotentialJobs);
-  setters.setTotal(payload.total);
-  setters.setCvKeywords(payload.cvKeywords);
-  setters.setCvProfile(payload.cvProfile);
-  setters.setLastUpdatedAt(payload.lastUpdatedAt);
-  setters.setConsultedSources(payload.consultedSources);
-  setters.setPreviewJobs(payload.previewJobs);
-  setters.setSuggestedRoles(payload.suggestedRoles);
-  setters.setActiveRoleTargets(payload.activeRoleTargets);
+  startTransition(() => {
+    setters.setJobs(payload.jobs);
+    setters.setPublicPotentialJobs(payload.publicPotentialJobs);
+    setters.setTotal(payload.total);
+    setters.setCvKeywords(payload.cvKeywords);
+    setters.setCvProfile(payload.cvProfile);
+    setters.setLastUpdatedAt(payload.lastUpdatedAt);
+    setters.setConsultedSources(payload.consultedSources);
+    setters.setPreviewJobs(payload.previewJobs);
+    setters.setSuggestedRoles(payload.suggestedRoles);
+    setters.setActiveRoleTargets(payload.activeRoleTargets);
+    setters.setSourceFetchMetrics(payload.sourceFetchMetrics ?? []);
+  });
 }
 
-function InfoAccordion({
+function StepPill({
+  step,
   title,
-  subtitle,
-  defaultOpen = false,
-  children
+  active,
+  done
 }: {
+  step: string;
   title: string;
-  subtitle?: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
+  active: boolean;
+  done: boolean;
 }) {
   return (
-    <details open={defaultOpen} className="rounded-2xl bg-white/10 p-4 open:bg-white/12">
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-white/60">{title}</p>
-          {subtitle ? <p className="mt-1 text-sm text-white/65">{subtitle}</p> : null}
-        </div>
-        <span className="rounded-full border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/55">
-          apri
-        </span>
-      </summary>
-      <div className="mt-4">{children}</div>
-    </details>
+    <div
+      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+        active
+          ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
+          : done
+            ? "border-[#d7c1ae] bg-[#f7ede5] text-[#8c4b1f]"
+            : "border-black/10 bg-white/60 text-black/55"
+      }`}
+    >
+      <span className="mr-2 text-xs uppercase tracking-[0.18em]">{step}</span>
+      <span className="font-medium">{title}</span>
+    </div>
   );
 }
 
 function EmptyPill({ text }: { text: string }) {
-  return <span className="text-sm text-white/75">{text}</span>;
+  return <span className="text-sm text-black/60">{text}</span>;
+}
+
+function Panel({
+  title,
+  subtitle,
+  children,
+  dark = false
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  dark?: boolean;
+}) {
+  return (
+    <section
+      className={`rounded-[28px] border p-5 ${
+        dark ? "border-black/5 bg-[#17312b] text-white shadow-card" : "border-black/10 bg-white/78 shadow-card"
+      }`}
+    >
+      <div className="mb-4">
+        <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${dark ? "text-white/55" : "text-black/45"}`}>
+          {title}
+        </p>
+        {subtitle ? <p className={`mt-2 text-sm ${dark ? "text-white/70" : "text-black/60"}`}>{subtitle}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function InfoCard({
+  label,
+  value,
+  hint,
+  tone = "default"
+}: {
+  label: string;
+  value: string | number;
+  hint: string;
+  tone?: "default" | "warm" | "cool";
+}) {
+  const toneClass =
+    tone === "warm"
+      ? "bg-[#f7ede5]"
+      : tone === "cool"
+        ? "bg-[#e7f4ef]"
+        : "bg-white/70";
+
+  return (
+    <div className={`rounded-[24px] border border-black/10 ${toneClass} p-4`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-black/45">{label}</p>
+      <p className="mt-3 text-3xl font-bold text-black">{value}</p>
+      <p className="mt-2 text-sm text-black/60">{hint}</p>
+    </div>
+  );
 }
 
 export function JobDashboard() {
@@ -129,6 +248,7 @@ export function JobDashboard() {
   const [publicPotentialJobs, setPublicPotentialJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState<SectorType | "all">("all");
   const [workMode, setWorkMode] = useState<WorkMode | "all">("all");
@@ -143,92 +263,83 @@ export function JobDashboard() {
   const [activeRoleTargets, setActiveRoleTargets] = useState<string[]>([]);
   const [analysisReady, setAnalysisReady] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
+  const [sourceFetchMetrics, setSourceFetchMetrics] = useState<SourceFetchMetrics[]>([]);
 
-  const publicJobs = jobs.filter((job) => job.sector === "pubblico");
-  const privateJobs = jobs.filter((job) => job.sector === "privato");
+  const publicJobs = useMemo(() => jobs.filter((job) => job.sector === "pubblico"), [jobs]);
+  const privateJobs = useMemo(() => jobs.filter((job) => job.sector === "privato"), [jobs]);
+  const featuredJobs = useMemo(() => jobs.slice(0, 3), [jobs]);
   const selectedLocationScope = locationScopes.find((item) => item.value === locationScope);
+  const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
+  const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
 
-  async function runSearch(usePost: boolean, roleTargets: string[] = []) {
-    if (usePost) {
-      setLoading(true);
-      const formData = new FormData();
-      formData.set("q", query);
-      formData.set("sector", sector);
-      formData.set("workMode", workMode);
-      formData.set("includeRemote", "false");
-      formData.set("location", SEARCH_LOCATION);
-      formData.set("locationScope", locationScope);
-      formData.set("roleTargets", JSON.stringify(roleTargets));
+  const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = []) => {
+    setLoading(true);
+    setErrorMessage("");
 
-      if (cvFile) {
-        formData.set("cv", cvFile);
+    try {
+      let response: Response;
+
+      if (usePost) {
+        const formData = new FormData();
+        formData.set("q", query);
+        formData.set("sector", sector);
+        formData.set("workMode", workMode);
+        formData.set("includeRemote", "false");
+        formData.set("location", SEARCH_LOCATION);
+        formData.set("locationScope", locationScope);
+        formData.set("roleTargets", JSON.stringify(roleTargets));
+
+        if (cvFile) {
+          formData.set("cv", cvFile);
+        }
+
+        response = await fetch("/api/jobs", {
+          method: "POST",
+          body: formData
+        });
+      } else {
+        const params = new URLSearchParams({
+          q: query,
+          sector,
+          workMode,
+          includeRemote: "false",
+          location: SEARCH_LOCATION,
+          locationScope
+        });
+
+        for (const roleTarget of roleTargets) {
+          params.append("roleTarget", roleTarget);
+        }
+
+        response = await fetch(`/api/jobs?${params.toString()}`);
       }
 
-      const response = await fetch("/api/jobs", {
-        method: "POST",
-        body: formData
-      });
-      const payload = (await response.json()) as SearchResponse;
-      setResponseState(payload, {
-        setJobs,
-        setPublicPotentialJobs,
-        setTotal,
-        setCvKeywords,
-        setCvProfile,
-        setLastUpdatedAt,
-        setConsultedSources,
-        setPreviewJobs,
-        setSuggestedRoles,
-        setActiveRoleTargets
-      });
+      if (!response.ok) {
+        throw new Error("La ricerca non ha restituito una risposta valida.");
+      }
+
+      return (await response.json()) as SearchResponse;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Errore non previsto durante la ricerca.";
+      setErrorMessage(message);
+      throw error;
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const params = new URLSearchParams({
-      q: query,
-      sector,
-      workMode,
-      includeRemote: "false",
-      location: SEARCH_LOCATION,
-      locationScope
-    });
-    for (const roleTarget of roleTargets) {
-      params.append("roleTarget", roleTarget);
-    }
-
-    const response = await fetch(`/api/jobs?${params.toString()}`);
-    const payload = (await response.json()) as SearchResponse;
-    setResponseState(payload, {
-      setJobs,
-      setPublicPotentialJobs,
-      setTotal,
-      setCvKeywords,
-      setCvProfile,
-      setLastUpdatedAt,
-      setConsultedSources,
-      setPreviewJobs,
-      setSuggestedRoles,
-      setActiveRoleTargets
-    });
-    setLoading(false);
-  }
+  }, [cvFile, locationScope, query, sector, workMode]);
 
   useEffect(() => {
     let active = true;
 
     async function loadInitialJobs() {
       try {
-        const response = await fetch(
-          "/api/jobs?location=Torino&locationScope=metro&sector=all&workMode=all&includeRemote=false&q="
-        );
-        const payload = (await response.json()) as SearchResponse;
+        const payload = await requestJobs(false, []);
 
         if (!active) {
           return;
         }
 
-        setResponseState(payload, {
+        applyResponseState(payload, {
           setJobs,
           setPublicPotentialJobs,
           setTotal,
@@ -238,27 +349,27 @@ export function JobDashboard() {
           setConsultedSources,
           setPreviewJobs,
           setSuggestedRoles,
-          setActiveRoleTargets
+          setActiveRoleTargets,
+          setSourceFetchMetrics
         });
       } catch {
         if (!active) {
           return;
         }
 
-        setJobs([]);
-        setPublicPotentialJobs([]);
-        setTotal(0);
-        setCvKeywords([]);
-        setCvProfile(null);
-        setConsultedSources([]);
-        setPreviewJobs([]);
-        setSuggestedRoles([]);
-        setSelectedSuggestedRoles([]);
-        setActiveRoleTargets([]);
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+        resetSearchState({
+          setJobs,
+          setPublicPotentialJobs,
+          setTotal,
+          setCvKeywords,
+          setCvProfile,
+          setLastUpdatedAt,
+          setConsultedSources,
+          setPreviewJobs,
+          setSuggestedRoles,
+          setActiveRoleTargets,
+          setSourceFetchMetrics
+        });
       }
     }
 
@@ -267,29 +378,45 @@ export function JobDashboard() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [requestJobs]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setAnalysisReady(false);
+    setSelectedSuggestedRoles([]);
 
     try {
-      setAnalysisReady(false);
-      setSelectedSuggestedRoles([]);
-      await runSearch(true, []);
+      const payload = await requestJobs(true, []);
+      applyResponseState(payload, {
+        setJobs,
+        setPublicPotentialJobs,
+        setTotal,
+        setCvKeywords,
+        setCvProfile,
+        setLastUpdatedAt,
+        setConsultedSources,
+        setPreviewJobs,
+        setSuggestedRoles,
+        setActiveRoleTargets,
+        setSourceFetchMetrics
+      });
       setAnalysisReady(true);
     } catch {
-      setJobs([]);
-      setPublicPotentialJobs([]);
-      setTotal(0);
-      setCvKeywords([]);
-      setCvProfile(null);
-      setConsultedSources([]);
-      setPreviewJobs([]);
-      setSuggestedRoles([]);
+      resetSearchState({
+        setJobs,
+        setPublicPotentialJobs,
+        setTotal,
+        setCvKeywords,
+        setCvProfile,
+        setLastUpdatedAt,
+        setConsultedSources,
+        setPreviewJobs,
+        setSuggestedRoles,
+        setActiveRoleTargets,
+        setSourceFetchMetrics
+      });
       setSelectedSuggestedRoles([]);
-      setActiveRoleTargets([]);
       setAnalysisReady(false);
-      setLoading(false);
     }
   }
 
@@ -300,20 +427,36 @@ export function JobDashboard() {
   }
 
   async function handleTargetedSearch() {
-    const roleTargets = [...(cvProfile?.titles ?? []), ...selectedSuggestedRoles];
+    const roleTargets = [...new Set([...(cvProfile?.titles ?? []), ...selectedSuggestedRoles])];
 
     try {
-      await runSearch(true, roleTargets);
+      const payload = await requestJobs(true, roleTargets);
+      applyResponseState(payload, {
+        setJobs,
+        setPublicPotentialJobs,
+        setTotal,
+        setCvKeywords,
+        setCvProfile,
+        setLastUpdatedAt,
+        setConsultedSources,
+        setPreviewJobs,
+        setSuggestedRoles,
+        setActiveRoleTargets,
+        setSourceFetchMetrics
+      });
+      setAnalysisReady(true);
     } catch {
-      setLoading(false);
+      return;
     }
   }
 
-  function renderJobCard(job: Job) {
+  function renderJobCard(job: Job, featured = false) {
     return (
       <article
         key={job.id}
-        className="rounded-[28px] border border-black/10 bg-white/75 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1"
+        className={`rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
+          featured ? "ring-1 ring-[#d7c1ae]" : ""
+        }`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -326,16 +469,37 @@ export function JobDashboard() {
             <p className="mt-2 text-sm font-medium text-black/65">{job.company}</p>
           </div>
           <div className="space-y-2 text-right">
-            <span className="block rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
+            {typeof job.relevanceScore === "number" ? (
+              <span className="block rounded-full bg-[#17312b] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+                Score {job.relevanceScore}
+              </span>
+            ) : null}
+            <span className="block rounded-full bg-[#f3ebe3] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
               Pubblicato {formatDate(job.postedAt)}
             </span>
-            <span className="block rounded-full bg-[#ede9fe] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#6d28d9]">
+            <span className="block rounded-full bg-[#ece7df] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/60">
               {job.expiresAt ? `Scade ${formatDate(job.expiresAt)}` : "Scadenza non indicata"}
             </span>
           </div>
         </div>
 
-        <p className="mt-5 text-sm leading-6 text-black/70">{truncateText(job.summary)}</p>
+        <p className="mt-5 text-sm leading-6 text-black/70">{truncateText(job.summary, featured ? 210 : 170)}</p>
+
+        {job.matchReasons && job.matchReasons.length > 0 ? (
+          <div className="mt-5 rounded-[22px] bg-[#eef5f1] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Perche lo vedi</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {job.matchReasons.slice(0, 4).map((reason) => (
+                <span
+                  key={reason}
+                  className="rounded-full border border-[#c6e3d8] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#155b4a]"
+                >
+                  {reason}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5 flex flex-wrap gap-2">
           {job.tags.slice(0, 6).map((tag) => (
@@ -345,31 +509,18 @@ export function JobDashboard() {
           ))}
         </div>
 
-        {job.matchReasons && job.matchReasons.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {job.matchReasons.map((reason) => (
-              <span
-                key={reason}
-                className="rounded-full bg-[#e0e7ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#4338ca]"
-              >
-                {reason}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
         {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
-          <div className="mt-4 rounded-2xl bg-[#f5f3ff] p-3 text-xs text-black/65">
+          <div className="mt-4 rounded-2xl bg-[#f7ede5] p-3 text-xs text-black/65">
             <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
             <p className="mt-2 leading-5">{truncateText(job.requirementHighlights[0], 180)}</p>
           </div>
         ) : null}
 
         {job.sector === "privato" && job.privateFitStatus === "partial" ? (
-          <div className="mt-4 rounded-2xl bg-[#eef2ff] p-3 text-xs text-[#3730a3]">
+          <div className="mt-4 rounded-2xl bg-[#fff5ec] p-3 text-xs text-[#8c4b1f]">
             <p className="font-semibold uppercase tracking-[0.12em]">Allineamento parziale</p>
             <p className="mt-2 leading-5">
-              La posizione condivide alcuni segnali con il CV, ma non combacia totalmente con esperienza e titoli principali.
+              La posizione condivide alcuni segnali con il CV, ma non combacia del tutto con esperienza e titoli principali.
             </p>
           </div>
         ) : null}
@@ -377,7 +528,7 @@ export function JobDashboard() {
         <div className="mt-6 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
           <div>
             <p>{job.location}</p>
-            <p className="mt-1 uppercase tracking-[0.14em]">{job.workMode}</p>
+            <p className="mt-1 uppercase tracking-[0.14em]">{workModeLabel(job.workMode)}</p>
           </div>
           <div className="flex items-center gap-3">
             {job.sector === "pubblico" && job.requirementSourceUrl ? (
@@ -394,7 +545,7 @@ export function JobDashboard() {
               href={job.originalUrl}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-clay px-4 py-2 font-semibold text-white"
+              className="rounded-full bg-[#17312b] px-4 py-2 font-semibold text-white"
             >
               Apri offerta
             </a>
@@ -423,192 +574,200 @@ export function JobDashboard() {
 
   return (
     <section className="relative mx-auto max-w-7xl px-6 pb-16">
-      <div className="glass relative overflow-hidden rounded-[32px] border border-black/10 p-6 shadow-card md:p-8">
-        <div className="grid-pattern absolute inset-0 opacity-40" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-pine">Torino focus</p>
-              <h1 className="max-w-3xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
-                Analizza il CV e cerca ruoli coerenti solo su Torino citta o area metropolitana.
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
-                La ricerca geografica e ora ristretta su due perimetri chiari, mentre il ranking
-                aggrega ruoli simili e separa meglio offerte pubbliche e private.
+      <div className="relative overflow-hidden rounded-[36px] border border-black/10 bg-[rgba(255,250,245,0.82)] p-6 shadow-card md:p-8">
+        <div className="hero-grid absolute inset-0 opacity-70" />
+        <div className="relative space-y-8">
+          <div className="space-y-5">
+            <div className="flex flex-wrap gap-3">
+              <StepPill step="01" title="Carica CV" active={currentStep === 1} done={currentStep > 1} />
+              <StepPill step="02" title="Leggi il profilo" active={currentStep === 2} done={currentStep > 2} />
+              <StepPill step="03" title="Affina la ricerca" active={currentStep === 3} done={false} />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#155b4a]">Torino focus</p>
+                <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
+                  Leggi il CV, spiega il match e mostra solo opportunita utili per Torino.
+                </h1>
+                <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
+                  Il frontend ora separa analisi, ricerca e verifica delle fonti. Prima capisci il profilo estratto, poi
+                  affini i ruoli suggeriti e infine apri le offerte migliori.
+                </p>
+              </div>
+
+              <Panel title="Sintesi rapida" subtitle="Una vista piu leggibile dello stato corrente">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoCard label="Risultati" value={total} hint="Posizioni compatibili mostrate in lista." tone="warm" />
+                  <InfoCard
+                    label="Fonti vive"
+                    value={consultedSources.length}
+                    hint="Sorgenti realmente interrogate per questi filtri."
+                    tone="cool"
+                  />
+                  <InfoCard label="Ruoli target" value={activeRoleTargets.length} hint="Titoli attivi usati nel matching." />
+                  <InfoCard
+                    label="Ultimo refresh"
+                    value={lastUpdatedAt ? formatTimestamp(lastUpdatedAt) : "Pronto"}
+                    hint="Aggiornato dopo l'ultima ricerca."
+                  />
+                </div>
+              </Panel>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Cerca ruolo o keyword
+              </span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="w-full border-none bg-transparent text-base outline-none"
+                placeholder="frontend, data, PMO, Java..."
+              />
+            </label>
+
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Settore</span>
+              <select
+                value={sector}
+                onChange={(event) => setSector(event.target.value as SectorType | "all")}
+                className="w-full border-none bg-transparent text-base outline-none"
+              >
+                {sectors.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Modalita</span>
+              <select
+                value={workMode}
+                onChange={(event) => setWorkMode(event.target.value as WorkMode | "all")}
+                className="w-full border-none bg-transparent text-base outline-none"
+              >
+                {modes.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Location bloccata
+              </span>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-base font-semibold">{SEARCH_LOCATION}</p>
+                  <p className="text-sm text-black/55">Perimetro geografico ristretto e coerente.</p>
+                </div>
+                <span className="rounded-full bg-[#eef5f1] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#155b4a]">
+                  Torino only
+                </span>
+              </div>
+            </div>
+
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Perimetro geografico
+              </span>
+              <select
+                value={locationScope}
+                onChange={(event) => setLocationScope(event.target.value as LocationScope)}
+                className="w-full border-none bg-transparent text-base outline-none"
+              >
+                {locationScopes.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-3 text-sm text-black/60">{selectedLocationScope?.description}</p>
+            </label>
+
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Carica CV PDF
+              </span>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
+                className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[#17312b] file:px-4 file:py-2 file:font-semibold file:text-white"
+              />
+              <p className="mt-3 text-sm text-black/60">
+                Il CV viene usato solo nella sessione corrente e va ricaricato a ogni nuova analisi.
+              </p>
+            </label>
+
+            <div className="rounded-[24px] border border-black/10 bg-[#17312b] p-4 text-white xl:col-span-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Stato workflow</p>
+              <p className="mt-3 text-2xl font-semibold">
+                {loading
+                  ? "Sto aggiornando il matching."
+                  : analysisReady
+                    ? "CV analizzato e ricerca affinata."
+                    : "Carica un CV per attivare il matching guidato."}
+              </p>
+              <p className="mt-2 text-sm text-white/70">
+                {analysisReady
+                  ? "Puoi selezionare i ruoli suggeriti e rilanciare la ricerca con un target piu stretto."
+                  : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4 xl:col-span-2">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Cerca ruolo o keyword
-                </span>
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  className="w-full border-none bg-transparent text-base outline-none"
-                  placeholder="frontend, data, PMO, Java..."
-                />
-              </label>
+            <button
+              type="submit"
+              disabled={loading || !cvFile}
+              className="rounded-[24px] bg-[#b4622a] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-1"
+            >
+              {loading ? "Analizzo..." : "Analizza CV e aggiorna"}
+            </button>
 
-              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Settore
-                </span>
-                <select
-                  value={sector}
-                  onChange={(event) => setSector(event.target.value as SectorType | "all")}
-                  className="w-full border-none bg-transparent text-base outline-none"
-                >
-                  {sectors.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <button
+              type="button"
+              onClick={() => void handleTargetedSearch()}
+              disabled={!analysisReady || loading || !cvProfile}
+              className="rounded-[24px] border border-black/10 bg-white/80 px-6 py-4 text-base font-semibold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 xl:col-span-1"
+            >
+              {loading ? "Attendi..." : "Applica ruoli suggeriti"}
+            </button>
+          </form>
 
-              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Modalita
-                </span>
-                <select
-                  value={workMode}
-                  onChange={(event) => setWorkMode(event.target.value as WorkMode | "all")}
-                  className="w-full border-none bg-transparent text-base outline-none"
-                >
-                  {modes.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          {errorMessage ? (
+            <div className="rounded-[24px] border border-[#e7b89a] bg-[#fff3ea] px-5 py-4 text-sm text-[#8c4b1f]" role="alert">
+              <p className="font-semibold uppercase tracking-[0.14em]">Errore ricerca</p>
+              <p className="mt-2">{errorMessage}</p>
+            </div>
+          ) : null}
 
-              <div className="rounded-[24px] border border-black/10 bg-white/70 p-4 xl:col-span-2">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Location bloccata
-                </span>
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-base font-semibold">{SEARCH_LOCATION}</p>
-                    <p className="text-sm text-black/55">Ricerca geografica ristretta e coerente.</p>
-                  </div>
-                  <span className="rounded-full bg-sand px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
-                    Torino only
-                  </span>
+          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+            <div className="space-y-6">
+              <Panel title="Sintesi matching" subtitle="Contatori principali e stato del ranking">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
+                  <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
+                  <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
+                  <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
                 </div>
-              </div>
+              </Panel>
 
-              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4 xl:col-span-2">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Perimetro geografico
-                </span>
-                <select
-                  value={locationScope}
-                  onChange={(event) => setLocationScope(event.target.value as LocationScope)}
-                  className="w-full border-none bg-transparent text-base outline-none"
-                >
-                  {locationScopes.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-3 text-sm text-black/60">{selectedLocationScope?.description}</p>
-              </label>
-
-              <label className="rounded-[24px] border border-black/10 bg-white/70 p-4 xl:col-span-2">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                  Carica CV PDF
-                </span>
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:font-semibold file:text-white"
-                />
-                <p className="mt-3 text-sm text-black/60">
-                  Il CV viene usato solo nella sessione corrente e va ricaricato a ogni nuova analisi.
-                </p>
-              </label>
-
-              <button
-                type="submit"
-                disabled={loading || !cvFile}
-                className="rounded-[24px] bg-clay px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-1"
-              >
-                {loading ? "Analizzo..." : "1. Analizza CV"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void handleTargetedSearch()}
-                disabled={!analysisReady || loading || !cvProfile}
-                className="rounded-[24px] border border-black/10 bg-white/70 px-6 py-4 text-base font-semibold text-black transition-opacity hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 xl:col-span-1"
-              >
-                {loading ? "Attendi..." : "2. Avvia ricerca reale"}
-              </button>
-            </form>
-          </div>
-
-          <div className="rounded-[28px] bg-ink p-6 text-white">
-            <p className="text-sm uppercase tracking-[0.2em] text-white/60">Profilo CV + fonti</p>
-            <div className="mt-6 grid gap-4">
-              <div className="grid gap-4 md:grid-cols-4">
-                <div>
-                  <p className="text-5xl font-bold">{total}</p>
-                  <p className="text-sm text-white/70">risultati totali compatibili</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold">{publicJobs.length}</p>
-                  <p className="text-sm text-white/70">pubblici</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold">{publicPotentialJobs.length}</p>
-                  <p className="text-sm text-white/70">PA da verificare</p>
-                </div>
-                <div>
-                  <p className="text-3xl font-bold">{privateJobs.length}</p>
-                  <p className="text-sm text-white/70">privati</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 text-sm text-white/70">
-                <p>Location attiva: {SEARCH_LOCATION}</p>
-                <p>Perimetro: {locationScope === "city" ? "Torino citta" : "Citta metropolitana di Torino"}</p>
-                <p>Fonti consultate: {consultedSources.length}</p>
-                <p>Ruoli target attivi: {activeRoleTargets.length}</p>
-                <p>{lastUpdatedAt ? `Ultimo refresh ${formatTimestamp(lastUpdatedAt)}` : "Pronto alla ricerca."}</p>
-              </div>
-
-              <InfoAccordion title="Fonti usate" subtitle="Elenco delle sorgenti realmente interrogate" defaultOpen>
-                <div className="flex flex-wrap gap-2">
-                  {consultedSources.length > 0 ? (
-                    consultedSources.map((source) => (
-                      <span key={source} className="rounded-full border border-white/15 px-3 py-1 text-xs">
-                        {source}
-                      </span>
-                    ))
-                  ) : (
-                    <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
-                  )}
-                </div>
-              </InfoAccordion>
-
-              <InfoAccordion
-                title="Profili estratti dal CV"
-                subtitle="Titoli, skill, esperienza e studio normalizzati"
-                defaultOpen
-              >
+              <Panel title="Profilo CV estratto" subtitle="Titoli, skill, esperienza e studio normalizzati">
                 {cvProfile ? (
-                  <div className="grid gap-4 text-sm text-white/75">
+                  <div className="space-y-5 text-sm text-black/75">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/55">Ruoli trovati</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {cvProfile.titles.length > 0 ? (
                           cvProfile.titles.map((title) => (
-                            <span key={title} className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs">
+                            <span key={title} className="rounded-full border border-black/10 bg-[#eef5f1] px-3 py-1 text-xs">
                               {titleCase(title)}
                             </span>
                           ))
@@ -619,11 +778,11 @@ export function JobDashboard() {
                     </div>
 
                     <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-white/55">Skill rilevate</p>
+                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Skill rilevate</p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {cvProfile.skills.length > 0 ? (
                           cvProfile.skills.map((skill) => (
-                            <span key={skill} className="rounded-full border border-white/15 px-3 py-1 text-xs">
+                            <span key={skill} className="rounded-full border border-black/10 px-3 py-1 text-xs">
                               {titleCase(skill)}
                             </span>
                           ))
@@ -641,13 +800,13 @@ export function JobDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-white/75">
-                    Carica un CV PDF in questa sessione per attivare estrazione e ranking.
+                  <p className="text-sm text-black/65">
+                    Carica un CV PDF per vedere il profilo estratto e far emergere meglio i motivi di compatibilita.
                   </p>
                 )}
-              </InfoAccordion>
+              </Panel>
 
-              <InfoAccordion title="Ruoli suggeriti simili" subtitle="Ruoli aggregati e correlati al profilo estratto">
+              <Panel title="Ruoli suggeriti" subtitle="Target simili al profilo estratto che puoi rilanciare">
                 {suggestedRoles.length > 0 ? (
                   <>
                     <div className="flex flex-wrap gap-2">
@@ -656,64 +815,133 @@ export function JobDashboard() {
                           key={role}
                           type="button"
                           onClick={() => toggleSuggestedRole(role)}
-                          className={`rounded-full border px-3 py-1 text-xs text-white transition-colors ${
+                          className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                             selectedSuggestedRoles.includes(role)
-                              ? "border-white bg-white/20"
-                              : "border-white/15 hover:bg-white/10"
+                              ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
+                              : "border-black/10 bg-white hover:bg-[#f3ebe3]"
                           }`}
                         >
                           {titleCase(role)}
                         </button>
                       ))}
                     </div>
-                    {selectedSuggestedRoles.length > 0 ? (
-                      <p className="mt-3 text-xs text-white/65">
-                        Selezionati per la ricerca reale: {selectedSuggestedRoles.map(titleCase).join(", ")}
-                      </p>
-                    ) : null}
+                    <p className="mt-3 text-sm text-black/60">
+                      {selectedSuggestedRoles.length > 0
+                        ? `Selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                        : "Seleziona uno o piu ruoli per restringere la ricerca reale."}
+                    </p>
                   </>
                 ) : (
-                  <p className="text-sm text-white/75">
-                    Dopo il parsing del CV qui compariranno ruoli affini aggregati dal matching.
+                  <p className="text-sm text-black/65">
+                    Dopo l&apos;analisi del CV qui compariranno ruoli affini aggregati dal matching.
                   </p>
                 )}
-              </InfoAccordion>
+              </Panel>
+            </div>
 
-              <InfoAccordion title="Preview posizioni" subtitle="Anteprima breve prima di aprire la fonte">
-                <div className="grid gap-3">
-                  {previewJobs.length > 0 ? (
-                    previewJobs.map((job) => (
-                      <div key={job.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                        <div className="flex items-start justify-between gap-3">
+            <div className="space-y-6">
+              <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti ok</p>
+                    <p className="mt-3 text-3xl font-bold">{sourceSummary.successful}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti KO</p>
+                    <p className="mt-3 text-3xl font-bold">{sourceSummary.failed}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Latenza media</p>
+                    <p className="mt-3 text-3xl font-bold">{formatDuration(sourceSummary.avgDuration)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {sourceFetchMetrics.length > 0 ? (
+                    sourceFetchMetrics.map((metric) => (
+                      <div key={metric.sourceId} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <div className="flex items-start justify-between gap-4">
                           <div>
-                            <p className="text-sm font-semibold text-white">{job.title}</p>
-                            <p className="mt-1 text-xs text-white/65">
-                              {job.company} · {job.location}
+                            <p className="text-sm font-semibold text-white">{metric.sourceLabel}</p>
+                            <p className="mt-1 text-xs text-white/55">
+                              {metric.success ? "Fetch completato" : "Fetch fallito"} - {formatDuration(metric.durationMs)}
                             </p>
                           </div>
-                          <span className="rounded-full border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-white/60">
-                            {job.sector}
+                          <span
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                              metric.success ? "bg-[#d6efe7] text-[#155b4a]" : "bg-[#f4dfce] text-[#8c4b1f]"
+                            }`}
+                          >
+                            {metric.success ? "ok" : "errore"}
                           </span>
                         </div>
-                        <p className="mt-2 text-xs leading-5 text-white/75">{truncateText(job.summary, 120)}</p>
-                        <p className="mt-2 text-xs text-white/60">
-                          {job.matchReasons?.slice(0, 2).join(" · ") || "match rilevante dal CV"}
-                        </p>
+
+                        <div className="mt-3 grid gap-2 text-xs text-white/70 sm:grid-cols-3">
+                          <p>Raccolti: {metric.fetchedJobs}</p>
+                          <p>Validi: {metric.validJobs}</p>
+                          <p>Dedupe key: {metric.dedupedJobs}</p>
+                        </div>
+
+                        {metric.query ? (
+                          <p className="mt-3 text-xs text-white/55">
+                            Query: {[...metric.query.roleKeywords, ...metric.query.skillKeywords].slice(0, 4).join(", ") || "nessuna query lato sorgente"}
+                          </p>
+                        ) : null}
+
+                        {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ffd4b5]">{metric.error}</p> : null}
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-white/75">
-                      La preview apparira dopo l&apos;analisi del CV e della ricerca.
-                    </p>
+                    <p className="text-sm text-white/70">Le metriche per fonte compariranno dopo la prima ricerca utile.</p>
                   )}
                 </div>
-              </InfoAccordion>
+              </Panel>
 
-              <InfoAccordion title="Keyword CV" subtitle="Segnali lessicali piu frequenti">
+              <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
+                <div className="flex flex-wrap gap-2">
+                  {consultedSources.length > 0 ? (
+                    consultedSources.map((source) => (
+                      <span key={source} className="rounded-full border border-black/10 bg-[#f7ede5] px-3 py-1 text-xs">
+                        {source}
+                      </span>
+                    ))
+                  ) : (
+                    <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
+                  )}
+                </div>
+              </Panel>
+
+              <Panel title="Preview rapida" subtitle="Anteprima sintetica prima di aprire la fonte">
+                <div className="grid gap-3">
+                  {previewJobs.length > 0 ? (
+                    previewJobs.map((job) => (
+                      <div key={job.id} className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-black">{job.title}</p>
+                            <p className="mt-1 text-xs text-black/60">
+                              {job.company} - {job.location}
+                            </p>
+                          </div>
+                          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${sectorBadgeClass(job.sector)}`}>
+                            {job.sector}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-black/70">{truncateText(job.summary, 120)}</p>
+                        <p className="mt-2 text-xs text-black/55">{job.matchReasons?.slice(0, 2).join(" - ") || "match rilevante dal CV"}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-black/65">La preview apparira dopo l&apos;analisi del CV e della ricerca.</p>
+                  )}
+                </div>
+              </Panel>
+
+              <Panel title="Keyword CV" subtitle="Segnali lessicali piu frequenti estratti dal profilo">
                 <div className="flex flex-wrap gap-2">
                   {cvKeywords.length > 0 ? (
                     cvKeywords.map((keyword) => (
-                      <span key={keyword} className="rounded-full border border-white/15 px-3 py-1 text-xs">
+                      <span key={keyword} className="rounded-full border border-black/10 px-3 py-1 text-xs">
                         {keyword}
                       </span>
                     ))
@@ -721,13 +949,13 @@ export function JobDashboard() {
                     <EmptyPill text="Le keyword compariranno dopo l'analisi del CV." />
                   )}
                 </div>
-              </InfoAccordion>
+              </Panel>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 space-y-8">
+      <div className="mt-8 space-y-8" aria-live="polite">
         {loading ? (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -740,21 +968,32 @@ export function JobDashboard() {
           </div>
         ) : jobs.length > 0 || publicPotentialJobs.length > 0 ? (
           <>
-            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eff6ff]")}
+            {featuredJobs.length > 0 ? (
+              <section className="space-y-4">
+                <div className="rounded-[28px] border border-black/10 bg-[#17312b] p-5 text-white shadow-card">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Top match</p>
+                  <h2 className="mt-2 font-[var(--font-display)] text-3xl font-bold">Le prime posizioni da aprire adesso</h2>
+                  <p className="mt-2 text-sm text-white/70">
+                    Questa sezione evidenzia i risultati piu alti nel ranking corrente.
+                  </p>
+                </div>
+                <div className="grid gap-4 xl:grid-cols-3">{featuredJobs.map((job) => renderJobCard(job, true))}</div>
+              </section>
+            ) : null}
+            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef5f1]")}
             {renderJobSection(
               "PA Potenzialmente Compatibili",
               "Verifica titoli di studio e requisiti specifici",
               publicPotentialJobs,
-              "bg-[#f5f3ff]"
+              "bg-[#f7ede5]"
             )}
-            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#eef2ff]")}
+            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#fff6ef]")}
           </>
         ) : (
           <div className="col-span-full rounded-[28px] border border-dashed border-black/20 bg-white/65 p-8 text-center">
             <p className="text-xl font-semibold">Nessun annuncio attivo con questi filtri.</p>
             <p className="mt-2 text-sm text-black/65">
-              Prova a cambiare perimetro geografico o carica il CV per ampliare il matching su
-              titoli, skill ed esperienza.
+              Prova a cambiare perimetro geografico o carica il CV per ampliare il matching su titoli, skill ed esperienza.
             </p>
           </div>
         )}
