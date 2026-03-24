@@ -1,0 +1,92 @@
+[
+  {
+    "id": "inpa",
+    "label": "inPA - Bandi e avvisi",
+    "sector": "pubblico",
+    "originType": "official",
+    "retrievalMode": "public-api",
+    "authMode": "none",
+    "coverage": "italy",
+    "qualityTier": "high",
+    "supportsKeywordSearch": true,
+    "supportsLocationSearch": true,
+    "supportsPagination": true,
+    "supportsDetailEnrichment": true,
+    "supportsIncrementalSync": false,
+    "supportsWorkModeFiltering": false,
+    "supportsSeniorityFiltering": false,
+    "supportsStructuredSalary": true,
+    "defaultPriority": 100,
+    "dedupeStrategy": "external-id",
+    "queryMappingHints": {
+      "keywordParam": "text",
+      "locationParam": "regioneId",
+      "pageParam": "page",
+      "notes": "Usa body POST con regioneId e text."
+    },
+    "knownLimitations": [
+      "Copertura fortemente legata al perimetro territoriale impostato",
+      "Richiede parsing secondario del bando per requisiti dettagliati"
+    ],
+    "enabled": true
+  },
+  {
+    "id": "greenhouse-private-boards",
+    "label": "Career boards Greenhouse",
+    "sector": "privato",
+    "originType": "ats",
+    "retrievalMode": "public-api",
+    "authMode": "none",
+    "coverage": "italy",
+    "qualityTier": "high",
+    "supportsKeywordSearch": false,
+    "supportsLocationSearch": false,
+    "supportsPagination": false,
+    "supportsDetailEnrichment": true,
+    "supportsIncrementalSync": false,
+    "supportsWorkModeFiltering": false,
+    "supportsSeniorityFiltering": false,
+    "supportsStructuredSalary": false,
+    "defaultPriority": 95,
+    "dedupeStrategy": "external-id",
+    "queryMappingHints": {
+      "notes": "Board token statico. Conviene usare content=true per arricchimento del payload."
+    },
+    "knownLimitations": [
+      "Nessuna vera ricerca keyword lato sorgente",
+      "Copertura dipendente dal catalogo board configurati"
+    ],
+    "enabled": true
+  },
+  {
+    "id": "adzuna",
+    "label": "Adzuna Jobs API",
+    "sector": "privato",
+    "originType": "aggregator",
+    "retrievalMode": "public-api",
+    "authMode": "api-key",
+    "coverage": "italy",
+    "qualityTier": "experimental",
+    "supportsKeywordSearch": true,
+    "supportsLocationSearch": true,
+    "supportsPagination": true,
+    "supportsDetailEnrichment": false,
+    "supportsIncrementalSync": false,
+    "supportsWorkModeFiltering": false,
+    "supportsSeniorityFiltering": false,
+    "supportsStructuredSalary": true,
+    "defaultPriority": 50,
+    "dedupeStrategy": "hybrid",
+    "queryMappingHints": {
+      "keywordParam": "what",
+      "locationParam": "where",
+      "pageParam": "page",
+      "notes": "Da usare come recall booster e non come fonte primaria."
+    },
+    "knownLimitations": [
+      "Possibili duplicati e annunci re-hosted",
+      "Richiede riconciliazione con URL originario quando disponibile"
+    ],
+    "enabled": false
+  }
+]

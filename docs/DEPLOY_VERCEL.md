@@ -4,6 +4,10 @@
 
 Tenere il progetto leggero e senza costi nella fase iniziale.
 
+Per la documentazione tecnica su matching, fonti e refactor, il punto di ingresso e:
+
+- [CV_MATCHING_FLOWS.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_FLOWS.md)
+
 ## Configurazione consigliata
 
 - frontend e API leggere su Vercel
@@ -37,3 +41,19 @@ Tenere il progetto leggero e senza costi nella fase iniziale.
 - Vercel solo per frontend e API veloci
 - scraping reale eseguito altrove
 - database free con limiti bassi ma sufficienti per uso personale
+
+## Coerenza con il refactor in corso
+
+Nel refactor attuale la direzione consigliata resta:
+
+- mantenere Vercel per UI e API leggere;
+- non spostare scraping pesante o browser automation dentro funzioni serverless;
+- separare progressivamente retrieval, filtering e ranking;
+- far crescere il layer fonti tramite adapter e capability model senza aumentare troppo il carico runtime su Vercel.
+
+Se devi lavorare sul sistema di matching o sulle fonti, consulta:
+
+- overview descrittiva:
+  - [CV_MATCHING_SYSTEM_OVERVIEW.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_SYSTEM_OVERVIEW.md)
+- playbook operativo:
+  - [CV_MATCHING_REFACTOR_PLAYBOOK.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_REFACTOR_PLAYBOOK.md)

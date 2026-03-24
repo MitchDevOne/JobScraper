@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobscraper.local/schemas/job-annotation.schema.json",
+  "title": "JobAnnotationEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "annotation_id",
+    "cv_id",
+    "job_id",
+    "job_text_snapshot",
+    "source_type",
+    "sector",
+    "expected_rank_band"
+  ],
+  "properties": {
+    "annotation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cv_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "job_text_snapshot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_type": {
+      "type": "string",
+      "enum": ["live", "seed", "synthetic"]
+    },
+    "sector": {
+      "type": "string",
+      "enum": ["pubblico", "privato"]
+    },
+    "expected_pa_status": {
+      "type": ["string", "null"],
+      "enum": ["compatible", "potential", "incompatible", null]
+    },
+    "expected_private_status": {
+      "type": ["string", "null"],
+      "enum": ["compatible", "partial", "weak", null]
+    },
+    "expected_rank_band": {
+      "type": "string",
+      "enum": ["top-3", "top-10", "visible", "excluded"]
+    },
+    "expected_reasons": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "sector": { "const": "pubblico" } }
+      },
+      "then": {
+        "required": ["expected_pa_status"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "sector": { "const": "privato" } }
+      },
+      "then": {
+        "required": ["expected_private_status"]
+      }
+    }
+  ]
+}

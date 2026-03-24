@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobscraper.local/schemas/cv-dataset.schema.json",
+  "title": "CvDatasetEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "cv_id",
+    "raw_text",
+    "scenario_label",
+    "language",
+    "layout_type",
+    "gold_titles",
+    "gold_skills",
+    "gold_experience_areas",
+    "gold_education_levels",
+    "gold_study_areas",
+    "gold_years_of_experience",
+    "gold_role_families",
+    "gold_preferred_locations"
+  ],
+  "properties": {
+    "cv_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "raw_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_label": {
+      "type": "string",
+      "enum": [
+        "developer",
+        "data",
+        "product",
+        "project",
+        "business",
+        "hybrid",
+        "public-administration",
+        "career-transition"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "enum": ["it", "en", "mixed"]
+    },
+    "layout_type": {
+      "type": "string",
+      "enum": ["standard", "compact", "narrative", "europass", "noisy"]
+    },
+    "gold_titles": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "gold_skills": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "gold_experience_areas": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "gold_education_levels": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "gold_study_areas": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "gold_years_of_experience": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "gold_role_families": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["developer", "data", "product", "project", "business", "generic"]
+      },
+      "uniqueItems": true
+    },
+    "gold_preferred_locations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "notes": {
+      "type": "string"
+    },
+    "expected_failure_modes": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

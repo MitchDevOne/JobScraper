@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobscraper.local/schemas/source-capabilities.schema.json",
+  "title": "SourceCapabilitiesEntry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "label",
+    "sector",
+    "originType",
+    "retrievalMode",
+    "authMode",
+    "coverage",
+    "qualityTier",
+    "supportsKeywordSearch",
+    "supportsLocationSearch",
+    "supportsPagination",
+    "supportsDetailEnrichment",
+    "supportsIncrementalSync",
+    "enabled"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sector": {
+      "type": "string",
+      "enum": ["pubblico", "privato"]
+    },
+    "originType": {
+      "type": "string",
+      "enum": ["official", "ats", "aggregator", "seed", "partner-api", "experimental"]
+    },
+    "retrievalMode": {
+      "type": "string",
+      "enum": ["listing-page", "public-api", "partner-api", "xml-feed", "seed", "manual-import"]
+    },
+    "authMode": {
+      "type": "string",
+      "enum": ["none", "api-key", "oauth", "partner-only"]
+    },
+    "coverage": {
+      "type": "string",
+      "enum": ["torino-city", "torino-metro", "piemonte", "italy", "eu", "global"]
+    },
+    "qualityTier": {
+      "type": "string",
+      "enum": ["high", "medium", "experimental"]
+    },
+    "supportsKeywordSearch": {
+      "type": "boolean"
+    },
+    "supportsLocationSearch": {
+      "type": "boolean"
+    },
+    "supportsPagination": {
+      "type": "boolean"
+    },
+    "supportsDetailEnrichment": {
+      "type": "boolean"
+    },
+    "supportsIncrementalSync": {
+      "type": "boolean"
+    },
+    "supportsWorkModeFiltering": {
+      "type": "boolean"
+    },
+    "supportsSeniorityFiltering": {
+      "type": "boolean"
+    },
+    "supportsStructuredSalary": {
+      "type": "boolean"
+    },
+    "defaultPriority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "rateLimitNotes": {
+      "type": "string"
+    },
+    "dedupeStrategy": {
+      "type": "string",
+      "enum": ["url", "title-company-location", "external-id", "hybrid"]
+    },
+    "queryMappingHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "keywordParam": { "type": "string" },
+        "locationParam": { "type": "string" },
+        "pageParam": { "type": "string" },
+        "remoteParam": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "knownLimitations": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  }
+}

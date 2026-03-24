@@ -48,6 +48,10 @@ Apri `http://localhost:3000`.
 
 Non servono variabili ambiente per questo MVP.
 
+Per il dettaglio sul deploy leggero e sui limiti del piano Hobby, vedi:
+
+- [DEPLOY_VERCEL.md](c:\Users\Lenovo\Desktop\JobScraper\docs\DEPLOY_VERCEL.md)
+
 ## Fonti attive
 
 - `inPA`
@@ -73,6 +77,22 @@ Non servono variabili ambiente per questo MVP.
 - niente scheduler o database
 - alcune fonti private restano dipendenti da board pubbliche o seed curato
 - il CV viene analizzato solo nella sessione corrente
+
+## Documentazione tecnica
+
+La documentazione sul sistema di matching e sul refactor e ora organizzata cosi:
+
+- hub principale:
+  - [CV_MATCHING_FLOWS.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_FLOWS.md)
+- overview del sistema attuale:
+  - [CV_MATCHING_SYSTEM_OVERVIEW.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_SYSTEM_OVERVIEW.md)
+- playbook operativo di refactor:
+  - [CV_MATCHING_REFACTOR_PLAYBOOK.md](c:\Users\Lenovo\Desktop\JobScraper\docs\CV_MATCHING_REFACTOR_PLAYBOOK.md)
+
+Usa:
+
+- `CV_MATCHING_SYSTEM_OVERVIEW.md` per capire i flussi attuali;
+- `CV_MATCHING_REFACTOR_PLAYBOOK.md` per pianificare e guidare i prossimi step di refactor.
 
 ## Prossimi passi
 

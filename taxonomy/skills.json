@@ -1,0 +1,79 @@
+[
+  {
+    "id": "react",
+    "label": "react",
+    "type": "framework",
+    "aliases": ["react.js", "next.js", "nextjs", "frontend"],
+    "enabled": true
+  },
+  {
+    "id": "typescript",
+    "label": "typescript",
+    "type": "language",
+    "aliases": ["ts"],
+    "enabled": true
+  },
+  {
+    "id": "javascript",
+    "label": "javascript",
+    "type": "language",
+    "aliases": ["js"],
+    "enabled": true
+  },
+  {
+    "id": "node-js",
+    "label": "node.js",
+    "type": "runtime",
+    "aliases": ["nodejs"],
+    "enabled": true
+  },
+  {
+    "id": "java",
+    "label": "java",
+    "type": "language",
+    "aliases": ["spring"],
+    "enabled": true
+  },
+  {
+    "id": "python",
+    "label": "python",
+    "type": "language",
+    "aliases": ["pandas"],
+    "enabled": true
+  },
+  {
+    "id": "sql",
+    "label": "sql",
+    "type": "data",
+    "aliases": ["postgres", "mysql", "database"],
+    "enabled": true
+  },
+  {
+    "id": "power-bi",
+    "label": "power bi",
+    "type": "bi-tool",
+    "aliases": ["powerbi"],
+    "enabled": true
+  },
+  {
+    "id": "project-management",
+    "label": "project management",
+    "type": "methodology",
+    "aliases": ["program management", "pmo"],
+    "enabled": true
+  },
+  {
+    "id": "scrum",
+    "label": "scrum",
+    "type": "methodology",
+    "aliases": ["agile"],
+    "enabled": true
+  },
+  {
+    "id": "machine-learning",
+    "label": "machine learning",
+    "type": "domain-skill",
+    "aliases": ["artificial intelligence", "ai", "ml"],
+    "enabled": true
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "frontend-developer",
+    "label": "frontend developer",
+    "family": "developer",
+    "domain": "software",
+    "aliases": ["frontend engineer", "react developer", "react engineer", "web developer", "sviluppatore frontend", "ui engineer"],
+    "enabled": true
+  },
+  {
+    "id": "backend-developer",
+    "label": "backend developer",
+    "family": "developer",
+    "domain": "software",
+    "aliases": ["java developer", "api developer", "sviluppatore backend", "backend engineer"],
+    "enabled": true
+  },
+  {
+    "id": "full-stack-developer",
+    "label": "full stack developer",
+    "family": "developer",
+    "domain": "software",
+    "aliases": ["fullstack developer", "sviluppatore full stack"],
+    "enabled": true
+  },
+  {
+    "id": "software-engineer",
+    "label": "software engineer",
+    "family": "developer",
+    "domain": "software",
+    "aliases": ["application engineer", "sviluppatore software"],
+    "enabled": true
+  },
+  {
+    "id": "data-analyst",
+    "label": "data analyst",
+    "family": "data",
+    "domain": "analytics",
+    "aliases": ["data specialist", "bi analyst", "analista dati", "reporting specialist"],
+    "enabled": true
+  },
+  {
+    "id": "data-engineer",
+    "label": "data engineer",
+    "family": "data",
+    "domain": "data-platform",
+    "aliases": ["etl developer", "analytics engineer"],
+    "enabled": true
+  },
+  {
+    "id": "business-analyst",
+    "label": "business analyst",
+    "family": "business",
+    "domain": "analysis",
+    "aliases": ["analista di business", "system analyst"],
+    "enabled": true
+  },
+  {
+    "id": "project-manager",
+    "label": "project manager",
+    "family": "project",
+    "domain": "delivery",
+    "aliases": ["program manager", "delivery manager"],
+    "enabled": true
+  },
+  {
+    "id": "project-management-officer",
+    "label": "project management officer",
+    "family": "project",
+    "domain": "pmo",
+    "aliases": ["pmo", "specialista pmo", "pmo specialist", "program coordinator", "specialista pianificazione e supporto"],
+    "enabled": true
+  },
+  {
+    "id": "product-manager",
+    "label": "product manager",
+    "family": "product",
+    "domain": "product",
+    "aliases": ["digital product manager", "product owner"],
+    "enabled": true
+  },
+  {
+    "id": "business-developer",
+    "label": "business developer",
+    "family": "business",
+    "domain": "growth",
+    "aliases": ["business development", "partnership manager", "growth manager"],
+    "enabled": true
+  }
+]

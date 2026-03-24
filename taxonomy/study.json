@@ -1,0 +1,54 @@
+{
+  "educationLevels": [
+    {
+      "id": "bachelor",
+      "label": "bachelor",
+      "aliases": ["bachelor's degree", "laurea triennale", "l-11", "degree"],
+      "enabled": true
+    },
+    {
+      "id": "master",
+      "label": "master",
+      "aliases": ["master i livello", "master di primo livello", "master", "laurea magistrale", "master's"],
+      "enabled": true
+    },
+    {
+      "id": "mba",
+      "label": "mba",
+      "aliases": ["master in business administration", "lm-77"],
+      "enabled": true
+    }
+  ],
+  "studyAreas": [
+    {
+      "id": "data-science",
+      "label": "data science",
+      "aliases": ["analisi dati", "business intelligence", "data analysis", "statistica"],
+      "enabled": true
+    },
+    {
+      "id": "business-administration",
+      "label": "business administration",
+      "aliases": ["economia", "management", "lm-77", "mba"],
+      "enabled": true
+    },
+    {
+      "id": "foreign-languages",
+      "label": "foreign languages",
+      "aliases": ["lingue e letterature", "l-11", "english", "inglese", "spagnolo", "russo", "tedesco"],
+      "enabled": true
+    },
+    {
+      "id": "software",
+      "label": "software",
+      "aliases": ["sviluppo software", "ingegneria informatica", "informatica"],
+      "enabled": true
+    },
+    {
+      "id": "research",
+      "label": "research",
+      "aliases": ["ricerca", "sperimentale", "scientifica"],
+      "enabled": true
+    }
+  ]
+}
