@@ -364,10 +364,10 @@ export function JobDashboard() {
   const targetedSearchLabel = loading
     ? "Attendi..."
     : selectedSuggestedRoles.length > 0
-      ? "Applica ruoli suggeriti selezionati"
+      ? "Applica ruoli selezionati + keyword CV"
       : suggestedRoles.length > 0
-        ? "Applica tutti i ruoli suggeriti"
-        : "Applica ruoli suggeriti";
+        ? "Applica tutti i suggeriti + keyword CV"
+        : "Applica ruoli suggeriti + keyword CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
@@ -880,11 +880,11 @@ export function JobDashboard() {
 
           <div className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-              <Panel title="Profilo CV estratto" subtitle="Profilo, ruoli suggeriti e keyword operative nello stesso flusso">
+              <Panel title="Profilo CV estratto" subtitle="Dopo l'analisi qui compaiono profilo, keyword operative e ruoli suggeriti selezionabili">
                 {cvProfile ? (
                   <div className="space-y-5 text-sm text-black/75">
                     <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f5f3ff] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Sintesi profilo</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Profilo del CV</p>
                       <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
                     </div>
 
@@ -929,7 +929,7 @@ export function JobDashboard() {
 
                     <div className="grid gap-4 lg:grid-cols-2">
                       <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
                         {suggestedRoles.length > 0 ? (
                           <>
                             <div className="mt-3 flex flex-wrap gap-2">
@@ -950,8 +950,8 @@ export function JobDashboard() {
                             </div>
                             <p className="mt-3 text-sm leading-6 text-black/60">
                               {selectedSuggestedRoles.length > 0
-                                ? `Selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                                : "Seleziona uno o piu ruoli per restringere la ricerca reale."}
+                                ? `Selezionati per il prossimo rilancio backend: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                                : "Seleziona uno o piu ruoli: il backend li combinera con keyword, skill e segnali del CV."}
                             </p>
                           </>
                         ) : (
@@ -962,9 +962,9 @@ export function JobDashboard() {
                       </div>
 
                       <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
                         <p className="mt-3 text-sm leading-6 text-black/65">
-                          Queste keyword vengono estratte dal profilo e usate come segnali operativi per cercare e ordinare posizioni.
+                          Queste keyword vengono estratte dal profilo e usate dal backend come segnali operativi per cercare, filtrare e ordinare le posizioni.
                         </p>
 
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -1011,26 +1011,30 @@ export function JobDashboard() {
                     <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
                       <p className="mt-3 text-sm leading-6 text-black/75">
-                        Le keyword aiutano soprattutto su bandi e avvisi pubblici, mentre per il privato vengono combinate con
-                        titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                        Ruoli suggeriti e keyword vengono inviati al backend insieme a titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <p className="text-sm leading-6 text-black/65">
-                      Carica un CV PDF per generare un sommario ragionato del profilo lavorativo, con ruolo prevalente,
-                      competenze chiave, esperienza, ruoli suggeriti e keyword operative.
+                      Carica un CV PDF per popolare questa card con profilo estratto, keyword operative e ruoli suggeriti selezionabili da usare nel backend di ricerca.
                     </p>
-                    <div className="grid gap-3 md:grid-cols-2">
+                    <div className="grid gap-3 md:grid-cols-3">
                       <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Profilo del CV</p>
+                        <p className="mt-3 text-sm leading-6 text-black/65">
+                          Qui vedrai sintesi, ruoli trovati, skill rilevate ed elementi di esperienza estratti dal CV.
+                        </p>
+                      </div>
+                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
                         <p className="mt-3 text-sm leading-6 text-black/65">
                           Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
                         </p>
                       </div>
                       <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
                         <p className="mt-3 text-sm leading-6 text-black/65">
                           Dopo la lettura del CV qui vedrai keyword operative e segnali di contesto usati dal motore.
                         </p>

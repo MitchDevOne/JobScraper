@@ -24,6 +24,13 @@ async function parsePdfBuffer(buffer: Buffer) {
   return buildCvProfile(parsed.text);
 }
 
+function isPdfUpload(file: File) {
+  const mimeType = file.type.toLowerCase();
+  const fileName = file.name.toLowerCase();
+
+  return file.size > 0 && (mimeType === "application/pdf" || mimeType === "" || fileName.endsWith(".pdf"));
+}
+
 export async function GET(request: NextRequest) {
   const filters = getFilters(request.nextUrl.searchParams);
   const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
@@ -63,7 +70,7 @@ export async function POST(request: NextRequest) {
   const file = formData.get("cv");
   let cvProfile = null;
 
-  if (file instanceof File && file.size > 0 && file.type === "application/pdf") {
+  if (file instanceof File && isPdfUpload(file)) {
     const arrayBuffer = await file.arrayBuffer();
     cvProfile = await parsePdfBuffer(Buffer.from(arrayBuffer));
   }
