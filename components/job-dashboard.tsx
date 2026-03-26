@@ -227,29 +227,48 @@ function applyResponseState(
   });
 }
 
-function StepPill({
+function StepCard({
   step,
   title,
+  description,
   active,
   done
 }: {
   step: string;
   title: string;
+  description: string;
   active: boolean;
   done: boolean;
 }) {
   return (
     <div
-      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+      className={`rounded-[24px] border p-4 text-sm transition-colors ${
         active
-          ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
+          ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a] shadow-card"
           : done
             ? "border-[#d7c1ae] bg-[#f7ede5] text-[#8c4b1f]"
-            : "border-black/10 bg-white/60 text-black/55"
+            : "border-black/10 bg-white/70 text-black/60"
       }`}
     >
-      <span className="mr-2 text-xs uppercase tracking-[0.18em]">{step}</span>
-      <span className="font-medium">{title}</span>
+      <div className="flex items-center gap-3">
+        <span
+          className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold uppercase tracking-[0.18em] ${
+            active
+              ? "border-[#155b4a]/30 bg-white/60 text-[#155b4a]"
+              : done
+                ? "border-[#8c4b1f]/20 bg-white/60 text-[#8c4b1f]"
+                : "border-black/10 bg-white/80 text-black/45"
+          }`}
+        >
+          {step}
+        </span>
+        <div className="space-y-1">
+          <p className="font-semibold">{title}</p>
+          <p className={`text-sm leading-6 ${active ? "text-[#155b4a]/80" : done ? "text-[#8c4b1f]/80" : "text-black/50"}`}>
+            {description}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -694,21 +713,36 @@ export function JobDashboard() {
         <div className="hero-grid absolute inset-0 opacity-70" />
         <div className="relative space-y-8">
           <div className="space-y-5">
-            <div className="flex flex-wrap gap-3">
-              <StepPill step="01" title="Carica CV" active={currentStep === 1} done={currentStep > 1} />
-              <StepPill step="02" title="Leggi il profilo" active={currentStep === 2} done={currentStep > 2} />
-              <StepPill step="03" title="Affina la ricerca" active={currentStep === 3} done={false} />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
+              <StepCard
+                step="01"
+                title="Carica CV"
+                description="Importa il profilo da analizzare e prepara il contesto di ricerca."
+                active={currentStep === 1}
+                done={currentStep > 1}
+              />
+              <div className="hidden text-center text-xl text-black/20 lg:block">→</div>
+              <StepCard
+                step="02"
+                title="Leggi il profilo"
+                description="Estrarre skill, ruoli e segnali utili per capire il match."
+                active={currentStep === 2}
+                done={currentStep > 2}
+              />
+              <div className="hidden text-center text-xl text-black/20 lg:block">→</div>
+              <StepCard
+                step="03"
+                title="Affina la ricerca"
+                description="Mostrare opportunita mirate e verificabili per Torino."
+                active={currentStep === 3}
+                done={false}
+              />
             </div>
 
             <div className="space-y-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#155b4a]">Torino focus</p>
               <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
-                Leggi il CV, spiega il match e mostra solo opportunita utili per Torino.
+                Job Scraper Torino
               </h1>
-              <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
-                Il frontend ora separa analisi, ricerca e verifica delle fonti. Prima capisci il profilo estratto, poi
-                affini i ruoli suggeriti e infine apri le offerte migliori.
-              </p>
             </div>
           </div>
 
