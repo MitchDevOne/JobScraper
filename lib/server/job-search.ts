@@ -588,6 +588,15 @@ function hasAppliedExtractedCvRoles(cvProfile: CvProfile | null, activeRoleTarge
   return activeRoleTargets.some((role) => extractedRoles.has(normalizeRoleLabel(role)));
 }
 
+function hasSemanticExpansionTargets(cvProfile: CvProfile | null, activeRoleTargets: string[]) {
+  if (!cvProfile || activeRoleTargets.length === 0) {
+    return false;
+  }
+
+  const extractedRoles = new Set(aggregateRoleLabels(cvProfile.titles, 16).map(normalizeRoleLabel));
+  return activeRoleTargets.some((role) => !extractedRoles.has(normalizeRoleLabel(role)));
+}
+
 function buildOrganizationNatureNote(governance: SourceGovernance, domain: SourceDomain) {
   if (governance === "private") {
     return null;
@@ -707,6 +716,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const locationScope = filters.locationScope ?? "metro";
   const activeRoleTargets = aggregateRoleLabels(filters.roleTargets ?? [], 12);
   const hasAppliedCvRoles = hasAppliedExtractedCvRoles(cvProfile, activeRoleTargets);
+  const hasSemanticTargets = hasSemanticExpansionTargets(cvProfile, activeRoleTargets);
   const roleTargets = expandRoleTerms(activeRoleTargets);
   const queryTokens = tokenize(filters.q ?? "");
   const sourceEntries = getEligibleSourceRegistryEntries(filters, cvProfile);
@@ -766,7 +776,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...fallbackSeedJobs]), cvProfile);
   const cvTokens = buildCvSemanticTokens(cvProfile);
 
-  const filteredJobs = jobs
+  const scopedJobs = jobs
     .filter((job) => {
       if (!filters.includeRemote && job.workMode === "remote") {
         return false;
@@ -792,20 +802,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
         return false;
       }
 
-      if (!queryTokens.length && !cvTokens.length && !roleTargets.length) {
-        return true;
-      }
-
-      const haystack = normalizeForMatch(
-        [job.title, job.company, job.summary, job.location, job.contractType ?? "", ...job.tags].join(" ")
-      );
-      const roleTargetMatch = roleTargets.length === 0 || roleTargets.some((role) => textContainsTerm(haystack, role));
-
-      if (!roleTargetMatch) {
-        return false;
-      }
-
-      return [...queryTokens, ...cvTokens, ...roleTargets].some((token) => textContainsTerm(haystack, token));
+      return true;
     })
     .map((job) => ({
       ...job,
@@ -824,7 +821,25 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
               cvProfile
             ).status
           : job.privateFitStatus
-    }))
+    }));
+
+  const filteredJobs = scopedJobs
+    .filter((job) => {
+      if (!queryTokens.length && !cvTokens.length && !roleTargets.length) {
+        return true;
+      }
+
+      const haystack = normalizeForMatch(
+        [job.title, job.company, job.summary, job.location, job.contractType ?? "", ...job.tags].join(" ")
+      );
+      const roleTargetMatch = roleTargets.length === 0 || roleTargets.some((role) => textContainsTerm(haystack, role));
+
+      if (hasSemanticTargets && !roleTargetMatch) {
+        return false;
+      }
+
+      return [...queryTokens, ...cvTokens, ...roleTargets].some((token) => textContainsTerm(haystack, token));
+    })
     .sort((a, b) => {
       if ((b.relevanceScore ?? 0) !== (a.relevanceScore ?? 0)) {
         return (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0);
@@ -871,7 +886,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     publicPotentialJobs,
     consultedSources: buildConsultedSources(jobs, requestedLocation, locationScope),
     previewJobs: filteredJobs.slice(0, 3),
-    suggestedRoles: hasAppliedCvRoles ? buildSuggestedRoles(cvProfile, filteredJobs) : [],
+    suggestedRoles: hasAppliedCvRoles ? buildSuggestedRoles(cvProfile, scopedJobs) : [],
     activeRoleTargets,
     sourceFetchMetrics
   };
