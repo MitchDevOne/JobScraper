@@ -1,4 +1,4 @@
-import { Job } from "@/lib/types";
+import { ContractType, Job } from "@/lib/types";
 
 type GreenhouseBoardJob = {
   id: number;
@@ -118,8 +118,31 @@ const smartRecruitersCompanies: SmartRecruitersCompanyConfig[] = [
   }
 ];
 
+const ATS_FETCH_TIMEOUT_MS = 4500;
+
 function normalize(input: string) {
   return input.trim().toLowerCase();
+}
+
+async function fetchJsonWithTimeout<T>(url: string) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ATS_FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url, {
+      headers: { "user-agent": "JobScraperMVP/1.0" },
+      next: { revalidate: 0 },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`ATS fetch failed: ${url} ${response.status}`);
+    }
+
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function stripTags(input: string) {
@@ -147,6 +170,38 @@ function inferWorkMode(text: string) {
   }
 
   return "on-site" as const;
+}
+
+function inferContractType(text: string): ContractType {
+  const haystack = normalize(text);
+
+  if (
+    haystack.includes("tirocinio") ||
+    haystack.includes("stage") ||
+    haystack.includes("internship") ||
+    haystack.includes("intern ")
+  ) {
+    return "tirocinio-retribuito";
+  }
+
+  if (
+    haystack.includes("tempo indeterminato") ||
+    haystack.includes("permanent") ||
+    haystack.includes("full time employee")
+  ) {
+    return "indeterminato";
+  }
+
+  if (
+    haystack.includes("tempo determinato") ||
+    haystack.includes("fixed term") ||
+    haystack.includes("contract") ||
+    haystack.includes("temporary")
+  ) {
+    return "determinato";
+  }
+
+  return "altro";
 }
 
 function inferCityFromLocation(location: string) {
@@ -203,16 +258,9 @@ function buildGreenhouseSummary(job: GreenhouseBoardJob) {
 }
 
 async function fetchGreenhouseBoard(config: GreenhouseBoardConfig): Promise<Job[]> {
-  const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${config.boardToken}/jobs`, {
-    headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Greenhouse board fetch failed: ${config.boardToken} ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { jobs?: GreenhouseBoardJob[] };
+  const payload = await fetchJsonWithTimeout<{ jobs?: GreenhouseBoardJob[] }>(
+    `https://boards-api.greenhouse.io/v1/boards/${config.boardToken}/jobs`
+  );
   const today = new Date().toISOString().slice(0, 10);
 
   return (payload.jobs ?? []).map((job) => {
@@ -230,6 +278,7 @@ async function fetchGreenhouseBoard(config: GreenhouseBoardConfig): Promise<Job[
       location,
       city: inferCityFromLocation(location),
       workMode,
+      contractType: inferContractType([location, ...metadata.map((item) => `${item.name ?? ""} ${item.value ?? ""}`)].join(" ")),
       source: config.source,
       sourceType: "company-site",
       originalUrl: job.absolute_url || config.companyUrl,
@@ -264,16 +313,7 @@ function buildLeverSummary(job: LeverPosting) {
 }
 
 async function fetchLeverBoard(config: LeverBoardConfig): Promise<Job[]> {
-  const response = await fetch(`https://api.lever.co/v0/postings/${config.site}?mode=json`, {
-    headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error(`Lever board fetch failed: ${config.site} ${response.status}`);
-  }
-
-  const payload = (await response.json()) as LeverPosting[];
+  const payload = await fetchJsonWithTimeout<LeverPosting[]>(`https://api.lever.co/v0/postings/${config.site}?mode=json`);
   const today = new Date().toISOString().slice(0, 10);
 
   return payload.map((job) => {
@@ -291,6 +331,7 @@ async function fetchLeverBoard(config: LeverBoardConfig): Promise<Job[]> {
       location,
       city: inferCityFromLocation(location),
       workMode,
+      contractType: inferContractType([department, team, commitment, job.descriptionPlain ?? "", job.additionalPlain ?? ""].join(" ")),
       source: config.source,
       sourceType: "company-site",
       originalUrl: job.hostedUrl || config.companyUrl,
@@ -318,16 +359,9 @@ function buildSmartRecruitersSummary(job: SmartRecruitersPosting) {
 }
 
 async function fetchSmartRecruitersCompany(config: SmartRecruitersCompanyConfig): Promise<Job[]> {
-  const response = await fetch(`https://api.smartrecruiters.com/v1/companies/${config.identifier}/postings?limit=100&offset=0`, {
-    headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
-  });
-
-  if (!response.ok) {
-    throw new Error(`SmartRecruiters fetch failed: ${config.identifier} ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { content?: SmartRecruitersPosting[] };
+  const payload = await fetchJsonWithTimeout<{ content?: SmartRecruitersPosting[] }>(
+    `https://api.smartrecruiters.com/v1/companies/${config.identifier}/postings?limit=100&offset=0`
+  );
   const today = new Date().toISOString().slice(0, 10);
 
   return (payload.content ?? []).map((job) => {
@@ -342,6 +376,14 @@ async function fetchSmartRecruitersCompany(config: SmartRecruitersCompanyConfig)
       location,
       city: inferCityFromLocation(location),
       workMode,
+      contractType: inferContractType(
+        [
+          job.typeOfEmployment?.label ?? "",
+          job.experienceLevel?.label ?? "",
+          job.department?.label ?? "",
+          buildSmartRecruitersSummary(job)
+        ].join(" ")
+      ),
       source: config.source,
       sourceType: "company-site",
       originalUrl: `${config.companyUrl}/${job.id}`,

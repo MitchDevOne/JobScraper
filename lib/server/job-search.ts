@@ -11,7 +11,7 @@ import { evaluatePrivateExperienceAlignment } from "@/lib/server/agents/private-
 import { evaluatePublicAdministrationRequirements } from "@/lib/server/agents/public-requirements-agent";
 import { privateJobsSeed } from "@/lib/data/private-jobs";
 import { getEligibleSourceRegistryEntries } from "@/lib/server/source-registry";
-import { CvProfile, Job, JobFilters, SourceFetchMetrics } from "@/lib/types";
+import { CvProfile, Job, JobFilters, SourceDomain, SourceFetchMetrics, SourceGovernance } from "@/lib/types";
 
 type SearchJobsResult = {
   jobs: Job[];
@@ -22,6 +22,24 @@ type SearchJobsResult = {
   activeRoleTargets: string[];
   sourceFetchMetrics: SourceFetchMetrics[];
 };
+
+const SOURCE_FETCH_TIMEOUT_MS = 9000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(`${label} timeout after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 const studyAreaSynonyms: Record<string, string[]> = {
   "data science": ["data science", "analisi dati", "business intelligence", "data analyst", "data engineer", "analytics"],
@@ -210,7 +228,7 @@ function buildJobSignals(
 ) {
   const titleLower = normalizeForMatch(job.title);
   const detailsLower = normalizeForMatch(
-    [job.summary, ...job.tags, ...(job.requirementHighlights ?? []), job.requirementsText ?? ""].join(" ")
+    [job.summary, job.contractType ?? "", ...job.tags, ...(job.requirementHighlights ?? []), job.requirementsText ?? ""].join(" ")
   );
   const expandedCvTitles = expandRoleTerms(cvProfile?.titles ?? []);
   const expandedCvSkills = expandSkillTerms(cvProfile?.skills ?? []);
@@ -313,6 +331,7 @@ function computeScore(
 ) {
   const titleText = normalizeForMatch(job.title);
   const detailsText = normalizeForMatch([job.company, job.summary, job.location, ...job.tags].join(" "));
+  const contractText = normalizeForMatch(job.contractType ?? "");
   const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
   const cvSemanticTokens = buildCvSemanticTokens(cvProfile);
   const publicFit = evaluatePublicAdministrationRequirements(signals, job, cvProfile);
@@ -333,6 +352,7 @@ function computeScore(
   score += scoreTokenMatches(detailsText, queryTokens, 4);
   score += scoreTokenMatches(titleText, cvSemanticTokens, 3);
   score += scoreTokenMatches(detailsText, cvSemanticTokens, 1);
+  score += scoreTokenMatches(contractText, queryTokens, 5);
 
   if (job.sector === "pubblico") {
     score += signals.roleMatches * 7;
@@ -497,6 +517,24 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   return rankedRoles.length > 0 ? rankedRoles : [...explicitTitles].slice(0, 6);
 }
 
+function buildOrganizationNatureNote(governance: SourceGovernance, domain: SourceDomain) {
+  if (governance === "private") {
+    return null;
+  }
+
+  if (domain === "third-sector" || domain === "ngo" || domain === "education-association" || domain === "neighborhood-houses") {
+    return "Classificazione operativa: ente privato/non profit o rete convenzionata; la natura giuridica del singolo ente va verificata sul sito ufficiale.";
+  }
+
+  if (domain === "foundation" || domain === "museum" || domain === "education" || domain === "ict") {
+    return "Classificazione operativa: ecosistema a governance ibrida; verifica sempre ente gestore e forma giuridica della selezione.";
+  }
+
+  return governance === "hybrid"
+    ? "Classificazione operativa: governance ibrida o non immediatamente univoca; verifica i dettagli sul sito dell'ente."
+    : null;
+}
+
 function dedupeJobs(jobs: Job[]) {
   const seen = new Set<string>();
 
@@ -605,16 +643,26 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
       const startedAt = Date.now();
 
       try {
-        const jobs = await source.fetcher?.(source.query, filters);
-        const dedupeKeys = new Set((jobs ?? []).map(buildJobDedupeKey));
+        const jobs = await withTimeout(
+          source.fetcher?.(source.query, filters) ?? Promise.resolve([]),
+          SOURCE_FETCH_TIMEOUT_MS,
+          source.id
+        );
+        const normalizedJobs = (jobs ?? []).map((job) => ({
+          ...job,
+          organizationGovernance: source.governance,
+          organizationDomain: source.domain,
+          organizationNatureNote: buildOrganizationNatureNote(source.governance, source.domain)
+        }));
+        const dedupeKeys = new Set(normalizedJobs.map(buildJobDedupeKey));
 
         return {
-          jobs: jobs ?? [],
+          jobs: normalizedJobs,
           metric: {
             sourceId: source.id,
             sourceLabel: source.label,
-            fetchedJobs: jobs?.length ?? 0,
-            validJobs: jobs?.length ?? 0,
+            fetchedJobs: normalizedJobs.length,
+            validJobs: normalizedJobs.length,
             dedupedJobs: dedupeKeys.size,
             durationMs: Date.now() - startedAt,
             success: true,
@@ -660,6 +708,10 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
         return false;
       }
 
+      if (filters.contractTypes?.length && (!job.contractType || !filters.contractTypes.includes(job.contractType))) {
+        return false;
+      }
+
       if (requestedLocation && !matchesLocation(job, requestedLocation, locationScope)) {
         return false;
       }
@@ -672,7 +724,9 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
         return true;
       }
 
-      const haystack = normalizeForMatch([job.title, job.company, job.summary, job.location, ...job.tags].join(" "));
+      const haystack = normalizeForMatch(
+        [job.title, job.company, job.summary, job.location, job.contractType ?? "", ...job.tags].join(" ")
+      );
       const roleTargetMatch = roleTargets.length === 0 || roleTargets.some((role) => textContainsTerm(haystack, role));
 
       if (!roleTargetMatch) {
@@ -718,6 +772,10 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
       }
 
       if (filters.workMode && filters.workMode !== "all" && job.workMode !== filters.workMode) {
+        return false;
+      }
+
+      if (filters.contractTypes?.length && (!job.contractType || !filters.contractTypes.includes(job.contractType))) {
         return false;
       }
 

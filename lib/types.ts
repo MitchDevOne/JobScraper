@@ -1,5 +1,6 @@
 export type SectorType = "pubblico" | "privato";
 export type WorkMode = "on-site" | "hybrid" | "remote";
+export type ContractType = "indeterminato" | "determinato" | "tirocinio-retribuito" | "altro";
 export type JobStatus = "nuova" | "vista" | "salvata" | "scartata" | "applicata";
 export type LocationScope = "city" | "metro";
 export type SourceGovernance = "public" | "private" | "hybrid";
@@ -33,9 +34,13 @@ export type Job = {
   title: string;
   company: string;
   sector: SectorType;
+  organizationGovernance?: SourceGovernance | null;
+  organizationDomain?: SourceDomain | null;
+  organizationNatureNote?: string | null;
   location: string;
   city: string;
   workMode: WorkMode;
+  contractType?: ContractType | null;
   source: string;
   sourceType: "company-site" | "public-portal" | "aggregator";
   originalUrl: string;
@@ -58,6 +63,7 @@ export type JobFilters = {
   sector?: SectorType | "all";
   q?: string;
   workMode?: WorkMode | "all";
+  contractTypes?: ContractType[];
   includeRemote?: boolean;
   location?: string;
   locationScope?: LocationScope;

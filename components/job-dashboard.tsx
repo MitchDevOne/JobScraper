@@ -354,7 +354,14 @@ export function JobDashboard() {
   const [sourceFetchMetrics, setSourceFetchMetrics] = useState<SourceFetchMetrics[]>([]);
 
   const publicJobs = useMemo(() => jobs.filter((job) => job.sector === "pubblico"), [jobs]);
-  const privateJobs = useMemo(() => jobs.filter((job) => job.sector === "privato"), [jobs]);
+  const hybridJobs = useMemo(
+    () => jobs.filter((job) => job.sector === "privato" && job.organizationGovernance === "hybrid"),
+    [jobs]
+  );
+  const privateJobs = useMemo(
+    () => jobs.filter((job) => job.sector === "privato" && job.organizationGovernance !== "hybrid"),
+    [jobs]
+  );
   const featuredJobs = useMemo(() => jobs.slice(0, 3), [jobs]);
   const selectedLocationScope = locationScopes.find((item) => item.value === locationScope);
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
@@ -563,6 +570,13 @@ export function JobDashboard() {
                     </span>
                   ))}
                 </div>
+              </div>
+            ) : null}
+
+            {job.organizationNatureNote ? (
+              <div className="rounded-2xl bg-[#f8f7ff] p-3 text-xs text-[#5b21b6]">
+                <p className="font-semibold uppercase tracking-[0.12em]">Classificazione ente</p>
+                <p className="mt-2 leading-5">{job.organizationNatureNote}</p>
               </div>
             ) : null}
 
@@ -923,6 +937,7 @@ export function JobDashboard() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
                     <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
+                    <InfoCard label="Ibrido" value={hybridJobs.length} hint="Fondazioni, ETS o enti a governance mista." tone="cool" />
                     <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
                     <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
                   </div>
@@ -1046,6 +1061,13 @@ export function JobDashboard() {
                 <div className="grid gap-4 xl:grid-cols-3">{featuredJobs.map((job) => renderJobCard(job, true))}</div>
               </section>
             ) : null}
+            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#f8f7ff]")}
+            {renderJobSection(
+              "Ibrido / Non Profit",
+              "Fondazioni, associazioni, ETS o enti a governance mista",
+              hybridJobs,
+              "bg-[#f5f3ff]"
+            )}
             {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef2ff]")}
             {renderJobSection(
               "PA Potenzialmente Compatibili",
@@ -1053,7 +1075,6 @@ export function JobDashboard() {
               publicPotentialJobs,
               "bg-[#f5f3ff]"
             )}
-            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#f8f7ff]")}
           </>
         ) : (
           <div className="col-span-full rounded-[28px] border border-dashed border-black/20 bg-white/65 p-8 text-center">

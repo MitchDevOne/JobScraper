@@ -1,4 +1,4 @@
-import { Job, SourceQuery, WorkMode } from "@/lib/types";
+import { ContractType, Job, SourceQuery, WorkMode } from "@/lib/types";
 
 type CareerTarget = {
   id: string;
@@ -144,8 +144,30 @@ const jobLinkMatchers = [
   "application"
 ];
 
+const CAREER_PAGE_FETCH_TIMEOUT_MS = 3500;
+const MAX_COMPANY_TARGETS = 6;
+const MAX_CAREER_PAGES_PER_TARGET = 3;
+const MAX_OFFER_URLS_PER_TARGET = 6;
+
 function normalize(input: string) {
   return input.trim().toLowerCase();
+}
+
+function prioritizeCareerTarget(target: CareerTarget, query: SourceQuery) {
+  const semanticHaystack = normalize([target.company, ...target.tags].join(" "));
+  let score = 0;
+
+  for (const token of [...query.roleKeywords, ...query.skillKeywords].map(normalize).filter(Boolean)) {
+    if (semanticHaystack.includes(token)) {
+      score += 3;
+    }
+  }
+
+  if (target.defaultLocation.toLowerCase().includes("torino")) {
+    score += 2;
+  }
+
+  return score;
 }
 
 function stripTags(input: string) {
@@ -302,6 +324,35 @@ function inferWorkMode(text: string): WorkMode {
   return "on-site";
 }
 
+function inferContractType(text: string): ContractType {
+  const haystack = normalize(text);
+
+  if (
+    haystack.includes("tirocinio") ||
+    haystack.includes("stage") ||
+    haystack.includes("internship") ||
+    haystack.includes("curricular") ||
+    haystack.includes("extracurricular")
+  ) {
+    return "tirocinio-retribuito";
+  }
+
+  if (haystack.includes("tempo indeterminato") || haystack.includes("permanent")) {
+    return "indeterminato";
+  }
+
+  if (
+    haystack.includes("tempo determinato") ||
+    haystack.includes("fixed term") ||
+    haystack.includes("contract") ||
+    haystack.includes("temporary")
+  ) {
+    return "determinato";
+  }
+
+  return "altro";
+}
+
 function inferPostedAt(html: string, fallbackDate: string) {
   const isoDateMatch = html.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
 
@@ -367,16 +418,24 @@ function textMatchesSemanticFocus(text: string, query: SourceQuery) {
 }
 
 async function fetchHtml(url: string) {
-  const response = await fetch(url, {
-    headers: { "user-agent": "JobScraperMVP/1.0" },
-    next: { revalidate: 0 }
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), CAREER_PAGE_FETCH_TIMEOUT_MS);
 
-  if (!response.ok) {
-    throw new Error(`Career page fetch failed: ${url} ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      headers: { "user-agent": "JobScraperMVP/1.0" },
+      next: { revalidate: 0 },
+      signal: controller.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`Career page fetch failed: ${url} ${response.status}`);
+    }
+
+    return response.text();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return response.text();
 }
 
 async function resolveCareerPages(target: CareerTarget) {
@@ -449,6 +508,7 @@ async function buildJobFromOfferUrl(target: CareerTarget, offerUrl: string, quer
       location: location.location,
       city: location.city,
       workMode: inferWorkMode(textBlob),
+      contractType: inferContractType(textBlob),
       source: `${target.company} - Career page`,
       sourceType: "company-site",
       originalUrl: offerUrl,
@@ -474,17 +534,22 @@ async function scrapeCompanyCareerTarget(target: CareerTarget, query: SourceQuer
       await Promise.all(
         careerPages
           .filter((url) => !isLikelyAtsUrl(url))
-          .slice(0, 4)
+          .slice(0, MAX_CAREER_PAGES_PER_TARGET)
           .map((careerUrl) => extractOfferUrls(careerUrl).catch(() => []))
       )
     ).flat()
-  ).slice(0, 8);
+  ).slice(0, MAX_OFFER_URLS_PER_TARGET);
 
   const jobs = await Promise.all(offerUrls.map((offerUrl) => buildJobFromOfferUrl(target, offerUrl, query, today)));
   return jobs.filter((job) => Boolean(job)) as Job[];
 }
 
 export async function scrapeTorinoPrivateCareerPages(query: SourceQuery) {
-  const results = await Promise.all(localCareerTargets.map((target) => scrapeCompanyCareerTarget(target, query).catch(() => [])));
+  const prioritizedTargets = [...localCareerTargets]
+    .sort((left, right) => prioritizeCareerTarget(right, query) - prioritizeCareerTarget(left, query))
+    .slice(0, MAX_COMPANY_TARGETS);
+  const results = await Promise.all(
+    prioritizedTargets.map((target) => scrapeCompanyCareerTarget(target, query).catch(() => []))
+  );
   return results.flat();
 }
