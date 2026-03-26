@@ -713,6 +713,12 @@ export function JobDashboard() {
         <div className="hero-grid absolute inset-0 opacity-70" />
         <div className="relative space-y-8">
           <div className="space-y-5">
+            <div className="space-y-4">
+              <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
+                Job Scraper Torino
+              </h1>
+            </div>
+
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-center">
               <StepCard
                 step="01"
@@ -721,7 +727,7 @@ export function JobDashboard() {
                 active={currentStep === 1}
                 done={currentStep > 1}
               />
-              <div className="hidden text-center text-xl text-black/20 lg:block">→</div>
+              <div className="hidden text-center text-xl text-black/20 lg:block">{">"}</div>
               <StepCard
                 step="02"
                 title="Leggi il profilo"
@@ -729,7 +735,7 @@ export function JobDashboard() {
                 active={currentStep === 2}
                 done={currentStep > 2}
               />
-              <div className="hidden text-center text-xl text-black/20 lg:block">→</div>
+              <div className="hidden text-center text-xl text-black/20 lg:block">{">"}</div>
               <StepCard
                 step="03"
                 title="Affina la ricerca"
@@ -738,91 +744,10 @@ export function JobDashboard() {
                 done={false}
               />
             </div>
-
-            <div className="space-y-4">
-              <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
-                Job Scraper Torino
-              </h1>
-            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                Cerca ruolo o keyword
-              </span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full border-none bg-transparent text-base outline-none"
-                placeholder="frontend, data, PMO, Java..."
-              />
-            </label>
-
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Settore</span>
-              <select
-                value={sector}
-                onChange={(event) => setSector(event.target.value as SectorType | "all")}
-                className="w-full border-none bg-transparent text-base outline-none"
-              >
-                {sectors.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Modalita</span>
-              <select
-                value={workMode}
-                onChange={(event) => setWorkMode(event.target.value as WorkMode | "all")}
-                className="w-full border-none bg-transparent text-base outline-none"
-              >
-                {modes.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                Location bloccata
-              </span>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-base font-semibold">{SEARCH_LOCATION}</p>
-                  <p className="text-sm text-black/55">Perimetro geografico ristretto e coerente.</p>
-                </div>
-                <span className="rounded-full bg-[#eef5f1] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#155b4a]">
-                  Torino only
-                </span>
-              </div>
-            </div>
-
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                Perimetro geografico
-              </span>
-              <select
-                value={locationScope}
-                onChange={(event) => setLocationScope(event.target.value as LocationScope)}
-                className="w-full border-none bg-transparent text-base outline-none"
-              >
-                {locationScopes.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-3 text-sm text-black/60">{selectedLocationScope?.description}</p>
-            </label>
-
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 xl:col-span-2">
+          <form onSubmit={handleSubmit} className="grid gap-4 xl:grid-cols-12">
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-4">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
                 Carica CV PDF
               </span>
@@ -844,7 +769,84 @@ export function JobDashboard() {
               </p>
             </label>
 
-            <div className="rounded-[24px] border border-black/10 bg-[#17312b] p-4 text-white xl:col-span-2">
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-4">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Cerca ruolo o keyword
+              </span>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="w-full border-none bg-transparent text-base outline-none"
+                placeholder="frontend, data, PMO, Java..."
+              />
+            </label>
+
+            <div className="grid gap-4 md:grid-cols-2 md:col-span-12 xl:col-span-4">
+              <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Settore</span>
+                <select
+                  value={sector}
+                  onChange={(event) => setSector(event.target.value as SectorType | "all")}
+                  className="w-full border-none bg-transparent text-base outline-none"
+                >
+                  {sectors.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Modalita</span>
+                <select
+                  value={workMode}
+                  onChange={(event) => setWorkMode(event.target.value as WorkMode | "all")}
+                  className="w-full border-none bg-transparent text-base outline-none"
+                >
+                  {modes.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-6">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Location bloccata
+              </span>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-base font-semibold">{SEARCH_LOCATION}</p>
+                  <p className="text-sm text-black/55">Perimetro geografico ristretto e coerente.</p>
+                </div>
+                <span className="rounded-full bg-[#eef5f1] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#155b4a]">
+                  Torino only
+                </span>
+              </div>
+            </div>
+
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-6">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Perimetro geografico
+              </span>
+              <select
+                value={locationScope}
+                onChange={(event) => setLocationScope(event.target.value as LocationScope)}
+                className="w-full border-none bg-transparent text-base outline-none"
+              >
+                {locationScopes.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-3 text-sm text-black/60">{selectedLocationScope?.description}</p>
+            </label>
+
+            <div className="rounded-[24px] border border-black/10 bg-[#17312b] p-4 text-white md:col-span-12 xl:col-span-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Stato workflow</p>
               <p className="mt-3 text-2xl font-semibold">
                 {loading
@@ -860,14 +862,14 @@ export function JobDashboard() {
                   ? "Puoi selezionare i ruoli suggeriti e rilanciare la ricerca con un target piu stretto."
                   : cvFile
                     ? "Sto leggendo il CV per estrarre profilo, keyword operative e ruoli affini."
-                    : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
+                  : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
               </p>
             </div>
 
             <button
               type="submit"
               disabled={loading || !cvFile}
-              className="rounded-[24px] bg-[#b4622a] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-1"
+              className="rounded-[24px] bg-[#b4622a] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-6 xl:col-span-3"
             >
               {loading ? "Analizzo..." : "Rianalizza CV"}
             </button>
@@ -876,7 +878,7 @@ export function JobDashboard() {
               type="button"
               onClick={() => void handleTargetedSearch()}
               disabled={!analysisReady || loading || !cvProfile}
-              className="rounded-[24px] border border-black/10 bg-white/80 px-6 py-4 text-base font-semibold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 xl:col-span-1"
+              className="rounded-[24px] border border-black/10 bg-white/80 px-6 py-4 text-base font-semibold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 md:col-span-6 xl:col-span-3"
             >
               {loading ? "Attendi..." : "Applica ruoli suggeriti"}
             </button>
