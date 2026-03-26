@@ -338,7 +338,6 @@ export function JobDashboard() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [query, setQuery] = useState("");
   const [sector, setSector] = useState<SectorType | "all">("all");
   const [workMode, setWorkMode] = useState<WorkMode | "all">("all");
   const [locationScope, setLocationScope] = useState<LocationScope>("metro");
@@ -371,7 +370,7 @@ export function JobDashboard() {
 
       if (usePost) {
         const formData = new FormData();
-        formData.set("q", query);
+        formData.set("q", "");
         formData.set("sector", sector);
         formData.set("workMode", workMode);
         formData.set("includeRemote", "false");
@@ -391,7 +390,7 @@ export function JobDashboard() {
         });
       } else {
         const params = new URLSearchParams({
-          q: query,
+          q: "",
           sector,
           workMode,
           includeRemote: "false",
@@ -418,7 +417,7 @@ export function JobDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [cvFile, locationScope, query, sector, workMode]);
+  }, [cvFile, locationScope, sector, workMode]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -673,19 +672,7 @@ export function JobDashboard() {
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-4 xl:grid-cols-12">
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-6">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                Cerca ruolo o keyword
-              </span>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                className="w-full border-none bg-transparent text-base outline-none"
-                placeholder="frontend, data, PMO, Java..."
-              />
-            </label>
-
-            <div className="grid gap-4 md:grid-cols-2 md:col-span-12 xl:col-span-6">
+            <div className="grid gap-4 md:grid-cols-2 md:col-span-12 xl:col-span-12">
               <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Settore</span>
                 <select
