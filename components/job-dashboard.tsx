@@ -360,6 +360,13 @@ export function JobDashboard() {
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
+  const reanalyzeLabel = loading
+    ? "Analizzo..."
+    : selectedSuggestedRoles.length > 0
+      ? "Rianalizza con i ruoli suggeriti selezionati dall'utente"
+      : suggestedRoles.length > 0
+        ? "Rianalizza con tutti i ruoli suggeriti"
+        : "Rianalizza CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
@@ -764,7 +771,7 @@ export function JobDashboard() {
               disabled={loading || !cvFile}
               className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 xl:col-span-6"
             >
-              {loading ? "Analizzo..." : "Rianalizza CV"}
+              {reanalyzeLabel}
             </button>
           </form>
 
