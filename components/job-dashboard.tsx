@@ -365,7 +365,7 @@ export function JobDashboard() {
     : selectedSuggestedRoles.length > 0
       ? "Rilancia la ricerca con le figure suggerite selezionate"
       : suggestedRoles.length > 0
-        ? "Rilancia la ricerca con tutte le figure suggerite"
+        ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
         : "Rianalizza CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
@@ -766,13 +766,6 @@ export function JobDashboard() {
               </p>
             </label>
 
-            <button
-              type="submit"
-              disabled={loading || !cvFile}
-              className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 xl:col-span-6"
-            >
-              {reanalyzeLabel}
-            </button>
             {analysisReady && suggestedRoles.length > 0 ? (
               <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4 md:col-span-12 xl:col-span-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Figure suggerite selezionabili</p>
@@ -782,10 +775,10 @@ export function JobDashboard() {
                       key={role}
                       type="button"
                       onClick={() => toggleSuggestedRole(role)}
-                      className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                         selectedSuggestedRoles.includes(role)
-                          ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
-                          : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
+                          ? "border-[#4f46e5] bg-[linear-gradient(135deg,#e0e7ff,#ede9fe)] text-[#312e81] shadow-sm"
+                          : "border-[#c7d2fe] bg-[#f8faff] text-[#4338ca] hover:border-[#818cf8] hover:bg-[#eef2ff]"
                       }`}
                     >
                       {titleCase(role)}
@@ -795,10 +788,20 @@ export function JobDashboard() {
                 <p className="mt-3 text-sm leading-6 text-black/60">
                   {selectedSuggestedRoles.length > 0
                     ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                    : "Dopo la prima analisi puoi selezionare alcune figure suggerite per un rilancio piu mirato, oppure non selezionare nulla e usare automaticamente l&apos;intero set suggerito."}
+                    : "Puoi selezionare alcune figure suggerite per restringere il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."}
                 </p>
               </div>
             ) : null}
+
+            <button
+              type="submit"
+              disabled={loading || !cvFile}
+              className={`rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 ${
+                analysisReady && suggestedRoles.length > 0 ? "xl:col-span-12" : "xl:col-span-6"
+              }`}
+            >
+              {reanalyzeLabel}
+            </button>
           </form>
 
           {errorMessage ? (
