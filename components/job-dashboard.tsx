@@ -332,7 +332,7 @@ export function JobDashboard() {
   const [consultedSources, setConsultedSources] = useState<string[]>([]);
   const [previewJobs, setPreviewJobs] = useState<Job[]>([]);
   const [suggestedRoles, setSuggestedRoles] = useState<string[]>([]);
-  const [selectedSuggestedRoles, setSelectedSuggestedRoles] = useState<string[]>([]);
+  const [selectedRoleTargets, setSelectedRoleTargets] = useState<string[]>([]);
   const [activeRoleTargets, setActiveRoleTargets] = useState<string[]>([]);
   const [analysisReady, setAnalysisReady] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
@@ -357,10 +357,14 @@ export function JobDashboard() {
     cvProfile &&
       activeRoleTargets.some((role) => cvProfile.titles.some((title) => normalizeRoleLabel(title) === normalizeRoleLabel(role)))
   );
+  const selectableRoleTargets = suggestedRoles.length > 0 ? suggestedRoles : cvProfile?.titles ?? [];
+  const roleSelectionLabel = suggestedRoles.length > 0 ? "Figure suggerite selezionabili" : "Ruoli estratti selezionabili";
   const reanalyzeLabel = loading
     ? "Analizzo..."
-    : selectedSuggestedRoles.length > 0
-      ? "Rilancia la ricerca con le figure suggerite selezionate"
+    : selectedRoleTargets.length > 0
+      ? suggestedRoles.length > 0
+        ? "Rilancia la ricerca con le figure suggerite selezionate"
+        : "Rilancia la ricerca con i ruoli estratti selezionati"
       : suggestedRoles.length > 0
         ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
         : hasExtractedRoleTargets && !hasAppliedExtractedRoles
@@ -429,9 +433,9 @@ export function JobDashboard() {
     event.preventDefault();
     const roleTargets =
       cvProfile && suggestedRoles.length > 0
-        ? [...new Set([...(cvProfile.titles ?? []), ...(selectedSuggestedRoles.length > 0 ? selectedSuggestedRoles : suggestedRoles)])]
+        ? [...new Set([...(cvProfile.titles ?? []), ...(selectedRoleTargets.length > 0 ? selectedRoleTargets : suggestedRoles)])]
         : cvProfile?.titles?.length
-          ? [...new Set(cvProfile.titles)]
+          ? [...new Set(selectedRoleTargets.length > 0 ? selectedRoleTargets : cvProfile.titles)]
           : [];
     setAnalysisReady(false);
 
@@ -472,7 +476,7 @@ export function JobDashboard() {
   async function runCvAnalysis(file: File) {
     setCvFile(file);
     setAnalysisReady(false);
-    setSelectedSuggestedRoles([]);
+    setSelectedRoleTargets([]);
 
     try {
       const payload = await requestJobs(true, [], file);
@@ -508,8 +512,8 @@ export function JobDashboard() {
     }
   }
 
-  function toggleSuggestedRole(role: string) {
-    setSelectedSuggestedRoles((current) =>
+  function toggleRoleTarget(role: string) {
+    setSelectedRoleTargets((current) =>
       current.includes(role) ? current.filter((item) => item !== role) : [...current, role]
     );
   }
@@ -774,17 +778,17 @@ export function JobDashboard() {
               </p>
             </label>
 
-            {analysisReady && suggestedRoles.length > 0 ? (
+            {analysisReady && selectableRoleTargets.length > 0 ? (
               <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4 md:col-span-12 xl:col-span-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Figure suggerite selezionabili</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">{roleSelectionLabel}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {suggestedRoles.map((role) => (
+                  {selectableRoleTargets.map((role) => (
                     <button
                       key={role}
                       type="button"
-                      onClick={() => toggleSuggestedRole(role)}
+                      onClick={() => toggleRoleTarget(role)}
                       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        selectedSuggestedRoles.includes(role)
+                        selectedRoleTargets.includes(role)
                           ? "border-[#4f46e5] bg-[linear-gradient(135deg,#e0e7ff,#ede9fe)] text-[#312e81] shadow-sm"
                           : "border-[#c7d2fe] bg-[#f8faff] text-[#4338ca] hover:border-[#818cf8] hover:bg-[#eef2ff]"
                       }`}
@@ -794,9 +798,11 @@ export function JobDashboard() {
                   ))}
                 </div>
                 <p className="mt-3 text-sm leading-6 text-black/60">
-                  {selectedSuggestedRoles.length > 0
-                    ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                    : "Puoi selezionare alcune figure suggerite per restringere il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."}
+                  {selectedRoleTargets.length > 0
+                    ? `${suggestedRoles.length > 0 ? "Figure suggerite" : "Ruoli estratti"} selezionati per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
+                    : suggestedRoles.length > 0
+                      ? "Puoi selezionare alcune figure suggerite per restringere il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."
+                      : "Puoi selezionare alcuni ruoli estratti dal CV per il prossimo rilancio, oppure non selezionare nulla e usare automaticamente tutti i ruoli estratti."}
                 </p>
               </div>
             ) : null}
