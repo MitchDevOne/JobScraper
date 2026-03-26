@@ -180,10 +180,45 @@ function uniqueTerms(values: string[]) {
   return [...new Set(values.map(normalize).filter(Boolean))];
 }
 
+const studyAreaQueryTerms: Record<string, string[]> = {
+  "data science": ["data science", "analytics", "business intelligence", "data analyst", "data engineer"],
+  "business administration": ["business administration", "management", "economia", "business analyst", "project manager"],
+  "foreign languages": ["foreign languages", "lingue", "international", "english"],
+  software: ["software", "developer", "engineer", "backend", "frontend"],
+  research: ["research", "ricerca", "scientifica"]
+};
+
+const educationLevelQueryTerms: Record<string, string[]> = {
+  master: ["master", "laurea magistrale", "magistrale"],
+  mba: ["mba", "business administration", "management"],
+  bachelor: ["bachelor", "laurea", "triennale"]
+};
+
+function expandStudyAreaQueryTerms(studyAreas: string[]) {
+  return uniqueTerms(
+    studyAreas.flatMap((area) => [area, ...(studyAreaQueryTerms[normalize(area)] ?? [])])
+  );
+}
+
+function expandEducationQueryTerms(levels: string[]) {
+  return uniqueTerms(
+    levels.flatMap((level) => [level, ...(educationLevelQueryTerms[normalize(level)] ?? [])])
+  );
+}
+
 function buildBaseSourceQuery(filters: JobFilters, cvProfile?: CvProfile | null): SourceQuery {
+  const semanticSkillTerms = uniqueTerms([
+    ...(cvProfile?.skills ?? []),
+    ...(cvProfile?.keywords ?? []),
+    ...(cvProfile?.experienceAreas ?? []),
+    ...expandStudyAreaQueryTerms(cvProfile?.studyAreas ?? []),
+    ...expandEducationQueryTerms(cvProfile?.educationLevels ?? []),
+    filters.q ?? ""
+  ]).slice(0, 16);
+
   return {
     roleKeywords: uniqueTerms([...(filters.roleTargets ?? []), ...(cvProfile?.titles ?? [])]),
-    skillKeywords: uniqueTerms([...(cvProfile?.skills ?? []), filters.q ?? ""]),
+    skillKeywords: semanticSkillTerms,
     location: filters.location?.trim() || null,
     locationScope: filters.locationScope ?? null,
     workMode: filters.workMode && filters.workMode !== "all" ? filters.workMode : null,

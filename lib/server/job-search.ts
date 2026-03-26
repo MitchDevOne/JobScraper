@@ -111,6 +111,35 @@ function expandStudyAreaTerms(studyAreas: string[]) {
   return [...expanded];
 }
 
+function expandEducationTerms(levels: string[]) {
+  const expanded = new Set<string>();
+
+  for (const level of levels.map(normalizeForMatch).filter(Boolean)) {
+    expanded.add(level);
+
+    for (const signal of educationLevelSignals[level] ?? []) {
+      expanded.add(normalizeForMatch(signal));
+    }
+  }
+
+  return [...expanded];
+}
+
+function buildCvSemanticTokens(cvProfile: CvProfile | null) {
+  if (!cvProfile) {
+    return [];
+  }
+
+  return [
+    ...cvProfile.keywords.map(normalizeForMatch),
+    ...expandSkillTerms(cvProfile.skills),
+    ...expandRoleTerms(cvProfile.titles),
+    ...cvProfile.experienceAreas.map(normalizeForMatch),
+    ...expandStudyAreaTerms(cvProfile.studyAreas),
+    ...expandEducationTerms(cvProfile.educationLevels)
+  ];
+}
+
 function textContainsTerm(text: string, term: string) {
   const normalizedTerm = normalizeForMatch(term);
 
@@ -285,6 +314,7 @@ function computeScore(
   const titleText = normalizeForMatch(job.title);
   const detailsText = normalizeForMatch([job.company, job.summary, job.location, ...job.tags].join(" "));
   const signals = buildJobSignals(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
+  const cvSemanticTokens = buildCvSemanticTokens(cvProfile);
   const publicFit = evaluatePublicAdministrationRequirements(signals, job, cvProfile);
   const privateFit = evaluatePrivateExperienceAlignment(
     {
@@ -297,15 +327,24 @@ function computeScore(
   );
 
   let score = 0;
-  score += scoreTokenMatches(titleText, queryTokens, 10);
-  score += scoreTokenMatches(detailsText, queryTokens, 5);
+  score += scoreTokenMatches(titleText, roleTargets, 12);
+  score += scoreTokenMatches(detailsText, roleTargets, 6);
+  score += scoreTokenMatches(titleText, queryTokens, 8);
+  score += scoreTokenMatches(detailsText, queryTokens, 4);
+  score += scoreTokenMatches(titleText, cvSemanticTokens, 3);
+  score += scoreTokenMatches(detailsText, cvSemanticTokens, 1);
 
   if (job.sector === "pubblico") {
-    score += signals.roleMatches * 9;
-    score += signals.skillMatches * 5;
-    score += signals.experienceMatches * 4;
+    score += signals.roleMatches * 7;
+    score += signals.skillMatches * 4;
+    score += signals.experienceMatches * 3;
+    score += signals.educationMatches * 6;
     score += publicFit.scoreBoost;
   } else {
+    score += signals.roleMatches * 8;
+    score += signals.skillMatches * 6;
+    score += signals.experienceMatches * 5;
+    score += signals.educationMatches * 2;
     score += privateFit.scoreBoost;
   }
 
@@ -321,7 +360,7 @@ function computeScore(
     score += 1;
   }
 
-  return score;
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function buildConsultedSources(jobs: Job[], requestedLocation: string, locationScope: JobFilters["locationScope"]) {
@@ -342,86 +381,120 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   }
 
   const explicitTitles = new Set(aggregateRoleLabels(cvProfile.titles, 16));
-  const candidateRoles: string[] = [];
+  const roleScores = new Map<string, number>();
+
+  const addRoleScore = (role: string, weight: number) => {
+    const normalizedRole = normalizeRoleLabel(role);
+
+    if (!normalizedRole) {
+      return;
+    }
+
+    roleScores.set(normalizedRole, (roleScores.get(normalizedRole) ?? 0) + weight);
+  };
 
   for (const title of cvProfile.titles) {
-    candidateRoles.push(title);
+    addRoleScore(title, 7);
 
     for (const relatedRole of suggestedRoleFamilies[normalizeRoleLabel(title)] ?? []) {
-      candidateRoles.push(relatedRole);
+      addRoleScore(relatedRole, 4);
     }
   }
 
   if (cvProfile.skills.includes("react")) {
-    candidateRoles.push("frontend developer", "full stack developer");
+    addRoleScore("frontend developer", 5);
+    addRoleScore("full stack developer", 4);
   }
 
   if (cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))) {
-    candidateRoles.push("backend developer", "software engineer");
+    addRoleScore("backend developer", 5);
+    addRoleScore("software engineer", 4);
   }
 
-  if (cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis"].includes(skill))) {
-    candidateRoles.push("data analyst", "business analyst");
+  if (cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis", "machine learning"].includes(skill))) {
+    addRoleScore("data analyst", 5);
+    addRoleScore("business analyst", 3);
+    addRoleScore("data engineer", 3);
   }
 
   if (cvProfile.skills.some((skill) => ["aws", "azure", "docker", "cloud"].includes(skill))) {
-    candidateRoles.push("cloud engineer", "devops engineer");
+    addRoleScore("cloud engineer", 4);
+    addRoleScore("devops engineer", 4);
   }
 
-  if (cvProfile.experienceAreas.includes("project management")) {
-    candidateRoles.push("project manager", "project management officer");
+  if (cvProfile.skills.includes("project management") || cvProfile.experienceAreas.includes("project management")) {
+    addRoleScore("project management officer", 5);
+    addRoleScore("project manager", 5);
   }
 
   if (cvProfile.experienceAreas.includes("public administration")) {
-    candidateRoles.push("business analyst", "project management officer", "responsabile relazioni istituzionali");
+    addRoleScore("project management officer", 4);
+    addRoleScore("business analyst", 3);
+    addRoleScore("responsabile relazioni istituzionali", 4);
   }
 
   if (cvProfile.studyAreas.includes("business administration")) {
-    candidateRoles.push("business analyst", "project manager");
+    addRoleScore("business analyst", 4);
+    addRoleScore("project manager", 3);
+    addRoleScore("product manager", 2);
   }
 
-  for (const job of jobs) {
+  if (cvProfile.studyAreas.includes("data science")) {
+    addRoleScore("data analyst", 4);
+    addRoleScore("data engineer", 3);
+  }
+
+  if (cvProfile.studyAreas.includes("software")) {
+    addRoleScore("software engineer", 4);
+    addRoleScore("backend developer", 3);
+  }
+
+  if (cvProfile.educationLevels.includes("mba")) {
+    addRoleScore("business analyst", 3);
+    addRoleScore("project manager", 3);
+    addRoleScore("product manager", 2);
+  }
+
+  if (cvProfile.keywords.some((keyword) => ["pmo", "coordinamento", "supporto"].includes(normalizeForMatch(keyword)))) {
+    addRoleScore("project management officer", 3);
+  }
+
+  if (cvProfile.keywords.some((keyword) => ["analisi", "analytics", "reporting"].includes(normalizeForMatch(keyword)))) {
+    addRoleScore("data analyst", 3);
+    addRoleScore("business analyst", 2);
+  }
+
+  for (const job of jobs.slice(0, 24)) {
     const normalizedTitle = normalizeRoleLabel(job.title);
 
     if (explicitTitles.has(normalizedTitle)) {
       continue;
     }
 
+    let weight = typeof job.relevanceScore === "number" ? Math.max(1, Math.round(job.relevanceScore / 3)) : 1;
+
     if (job.matchReasons?.some((reason) => reason === "skill dal CV" || reason === "esperienza rilevante")) {
-      candidateRoles.push(normalizedTitle);
+      weight += 2;
+    }
+
+    if (job.matchReasons?.some((reason) => reason === "titolo affine al CV")) {
+      weight += 1;
+    }
+
+    addRoleScore(normalizedTitle, weight);
+
+    for (const relatedRole of suggestedRoleFamilies[normalizedTitle] ?? []) {
+      addRoleScore(relatedRole, Math.max(1, weight - 1));
     }
   }
 
-  const relatedRoles = aggregateRoleLabels(candidateRoles, 12).filter(
-    (role) => !explicitTitles.has(normalizeRoleLabel(role))
-  );
+  const rankedRoles = [...roleScores.entries()]
+    .filter(([role]) => !explicitTitles.has(normalizeRoleLabel(role)))
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([role]) => role)
+    .slice(0, 8);
 
-  if (relatedRoles.length > 0) {
-    return relatedRoles.slice(0, 8);
-  }
-
-  const keywordDrivenFallback = aggregateRoleLabels(
-    [
-      ...cvProfile.titles,
-      ...(cvProfile.skills.includes("react") ? ["frontend developer", "full stack developer"] : []),
-      ...(cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))
-        ? ["backend developer", "software engineer"]
-        : []),
-      ...(cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis"].includes(skill))
-        ? ["data analyst", "business analyst"]
-        : []),
-      ...(cvProfile.skills.includes("project management") || cvProfile.experienceAreas.includes("project management")
-        ? ["project management officer", "project manager"]
-        : [])
-    ],
-    8
-  ).filter((role) => !explicitTitles.has(normalizeRoleLabel(role)));
-
-  if (keywordDrivenFallback.length > 0) {
-    return keywordDrivenFallback;
-  }
-
-  return [...explicitTitles].slice(0, 6);
+  return rankedRoles.length > 0 ? rankedRoles : [...explicitTitles].slice(0, 6);
 }
 
 function dedupeJobs(jobs: Job[]) {
@@ -569,14 +642,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const liveJobs = liveResults.flatMap((result) => result.jobs);
   const sourceFetchMetrics = liveResults.map((result) => result.metric);
   const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...privateJobsSeed]), cvProfile);
-  const cvTokens = cvProfile
-    ? [
-        ...cvProfile.keywords.map(normalizeForMatch),
-        ...expandSkillTerms(cvProfile.skills),
-        ...expandRoleTerms(cvProfile.titles),
-        ...cvProfile.experienceAreas.map(normalizeForMatch)
-      ]
-    : [];
+  const cvTokens = buildCvSemanticTokens(cvProfile);
 
   const filteredJobs = jobs
     .filter((job) => {

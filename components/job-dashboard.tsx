@@ -1038,6 +1038,10 @@ export function JobDashboard() {
                   <p className="mt-2 text-sm text-white/70">
                     Questa sezione evidenzia i risultati piu alti nel ranking corrente.
                   </p>
+                  <p className="mt-3 text-xs leading-6 text-white/75">
+                    Scala score: `80-100` alta aderenza, `60-79` buon fit, `40-59` compatibilita parziale, sotto `40`
+                    match esplorativo.
+                  </p>
                 </div>
                 <div className="grid gap-4 xl:grid-cols-3">{featuredJobs.map((job) => renderJobCard(job, true))}</div>
               </section>
