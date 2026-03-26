@@ -361,6 +361,13 @@ export function JobDashboard() {
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
+  const targetedSearchLabel = loading
+    ? "Attendi..."
+    : selectedSuggestedRoles.length > 0
+      ? "Applica ruoli suggeriti selezionati"
+      : suggestedRoles.length > 0
+        ? "Applica tutti i ruoli suggeriti"
+        : "Applica ruoli suggeriti";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
@@ -860,7 +867,7 @@ export function JobDashboard() {
               disabled={!analysisReady || loading || !cvProfile}
               className="rounded-[24px] border border-black/10 bg-white/80 px-6 py-4 text-base font-semibold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 md:col-span-6 xl:col-span-3"
             >
-              {loading ? "Attendi..." : "Applica ruoli suggeriti"}
+              {targetedSearchLabel}
             </button>
           </form>
 
