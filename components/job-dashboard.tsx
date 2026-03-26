@@ -575,21 +575,21 @@ export function JobDashboard() {
     return (
       <article
         key={job.id}
-        className={`flex h-[440px] flex-col rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
+        className={`flex min-h-0 h-[440px] flex-col overflow-hidden rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
           featured ? "ring-1 ring-[#d7c1ae] xl:h-[460px]" : ""
         }`}
       >
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <span
               className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] ${sectorBadgeClass(job.sector)}`}
             >
               {job.sector}
             </span>
-            <h3 className="mt-4 text-2xl font-semibold">{job.title}</h3>
+            <h3 className="mt-4 line-clamp-5 text-2xl font-semibold">{job.title}</h3>
             <p className="mt-2 text-sm font-medium text-black/65">{job.company}</p>
           </div>
-          <div className="space-y-2 text-right">
+          <div className="shrink-0 space-y-2 text-right">
             {typeof job.relevanceScore === "number" ? (
               <span className="block rounded-full bg-[#17312b] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
                 Score {job.relevanceScore}
@@ -604,8 +604,8 @@ export function JobDashboard() {
           </div>
         </div>
 
-        <div className="mt-5 flex-1 overflow-hidden">
-          <div className="h-full space-y-4 overflow-y-auto pr-2">
+        <div className="mt-5 min-h-0 flex-1 overflow-hidden">
+          <div className="h-full min-h-0 space-y-4 overflow-y-auto pr-2">
             <p className="text-sm leading-6 text-black/70">{job.summary}</p>
 
             {job.matchReasons && job.matchReasons.length > 0 ? (
@@ -650,8 +650,8 @@ export function JobDashboard() {
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
-          <div>
+        <div className="mt-5 flex shrink-0 items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
+          <div className="min-w-0">
             <p>{job.location}</p>
             <p className="mt-1 uppercase tracking-[0.14em]">{workModeLabel(job.workMode)}</p>
           </div>
