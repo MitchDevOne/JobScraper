@@ -122,6 +122,8 @@ export type CvProfile = {
   preferredLocations: string[];
 };
 
+export type SearchStage = "idle" | "cv_analysis" | "extracted_role_search" | "semantic_expansion_search";
+
 export type SearchResponse = {
   total: number;
   jobs: Job[];
@@ -134,6 +136,7 @@ export type SearchResponse = {
   previewJobs: Job[];
   suggestedRoles: string[];
   activeRoleTargets: string[];
+  searchStage: SearchStage;
   searchedLocationScope: LocationScope;
   sourceFetchMetrics?: SourceFetchMetrics[];
 };

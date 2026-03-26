@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, startTransition, useCallback, useMemo, useState } from "react";
-import { CvProfile, Job, LocationScope, SearchResponse, SectorType, SourceFetchMetrics, WorkMode } from "@/lib/types";
+import { CvProfile, Job, LocationScope, SearchResponse, SearchStage, SectorType, SourceFetchMetrics, WorkMode } from "@/lib/types";
 
 const SEARCH_LOCATION = "Torino";
 
@@ -155,6 +155,7 @@ function resetSearchState(setters: {
   setSuggestedRoles: (roles: string[]) => void;
   setSelectedRoleTargets: (roles: string[]) => void;
   setActiveRoleTargets: (roles: string[]) => void;
+  setSearchStage: (stage: SearchStage) => void;
   setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
 }) {
   setters.setJobs([]);
@@ -168,6 +169,7 @@ function resetSearchState(setters: {
   setters.setSuggestedRoles([]);
   setters.setSelectedRoleTargets([]);
   setters.setActiveRoleTargets([]);
+  setters.setSearchStage("idle");
   setters.setSourceFetchMetrics([]);
 }
 
@@ -185,6 +187,7 @@ function applyResponseState(
     setSuggestedRoles: (roles: string[]) => void;
     setSelectedRoleTargets: (roles: string[]) => void;
     setActiveRoleTargets: (roles: string[]) => void;
+    setSearchStage: (stage: SearchStage) => void;
     setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
   }
 ) {
@@ -212,6 +215,7 @@ function applyResponseState(
     setters.setSuggestedRoles(payload.suggestedRoles);
     setters.setSelectedRoleTargets([]);
     setters.setActiveRoleTargets(payload.activeRoleTargets);
+    setters.setSearchStage(payload.searchStage);
     setters.setSourceFetchMetrics(payload.sourceFetchMetrics ?? []);
   });
 }
@@ -338,6 +342,7 @@ export function JobDashboard() {
   const [suggestedRoles, setSuggestedRoles] = useState<string[]>([]);
   const [selectedRoleTargets, setSelectedRoleTargets] = useState<string[]>([]);
   const [activeRoleTargets, setActiveRoleTargets] = useState<string[]>([]);
+  const [searchStage, setSearchStage] = useState<SearchStage>("idle");
   const [analysisReady, setAnalysisReady] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState("");
   const [sourceFetchMetrics, setSourceFetchMetrics] = useState<SourceFetchMetrics[]>([]);
@@ -357,18 +362,15 @@ export function JobDashboard() {
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
   const hasExtractedRoleTargets = Boolean(cvProfile && cvProfile.titles.length > 0);
-  const hasAppliedExtractedRoles = Boolean(
-    cvProfile &&
-      activeRoleTargets.some((role) => cvProfile.titles.some((title) => normalizeRoleLabel(title) === normalizeRoleLabel(role)))
-  );
-  const hasSemanticExpansionRoles = hasAppliedExtractedRoles && suggestedRoles.length > 0;
+  const hasAppliedExtractedRoles = searchStage === "extracted_role_search" || searchStage === "semantic_expansion_search";
+  const hasSemanticExpansionRoles = suggestedRoles.length > 0 && hasAppliedExtractedRoles;
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedRoleTargets.length > 0
       ? "Rilancia la ricerca con le figure suggerite selezionate"
       : hasSemanticExpansionRoles
         ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
-        : hasExtractedRoleTargets && !hasAppliedExtractedRoles
+        : searchStage === "cv_analysis" && hasExtractedRoleTargets
           ? "Rilancia la ricerca con i ruoli estratti dal CV"
           : "Rianalizza CV";
 
@@ -454,6 +456,7 @@ export function JobDashboard() {
         setSuggestedRoles,
         setSelectedRoleTargets,
         setActiveRoleTargets,
+        setSearchStage,
         setSourceFetchMetrics
       });
       setAnalysisReady(true);
@@ -470,6 +473,7 @@ export function JobDashboard() {
         setSuggestedRoles,
         setSelectedRoleTargets,
         setActiveRoleTargets,
+        setSearchStage,
         setSourceFetchMetrics
       });
       setAnalysisReady(false);
@@ -495,6 +499,7 @@ export function JobDashboard() {
         setSuggestedRoles,
         setSelectedRoleTargets,
         setActiveRoleTargets,
+        setSearchStage,
         setSourceFetchMetrics
       });
       setAnalysisReady(true);
@@ -511,6 +516,7 @@ export function JobDashboard() {
         setSuggestedRoles,
         setSelectedRoleTargets,
         setActiveRoleTargets,
+        setSearchStage,
         setSourceFetchMetrics
       });
       setAnalysisReady(false);
@@ -828,12 +834,12 @@ export function JobDashboard() {
               </button>
             )}
 
-            {analysisReady && hasExtractedRoleTargets && !hasSemanticExpansionRoles ? (
+            {analysisReady && searchStage === "cv_analysis" && hasExtractedRoleTargets ? (
               <div className="rounded-[24px] border border-[#dbe4ff] bg-[#f8faff] p-4 text-sm text-black/65 md:col-span-12 xl:col-span-12">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Sequenza di affinamento</p>
                 <p className="mt-3 leading-6">
-                  Alla prima analisi il sistema usa solo i ruoli congrui estratti dal CV. Al prossimo rilancio questi ruoli
-                  vengono applicati automaticamente alla ricerca e il modello elabora le figure suggerite da selezionare eventualmente nel passaggio successivo.
+                  Alla prima fase il sistema usa i ruoli trovati nel CV per produrre i primi risultati. Dopo questo rilancio
+                  il modello genera i ruoli suggeriti da espansione semantica / LLM, che diventano selezionabili per la ricerca successiva.
                 </p>
               </div>
             ) : null}

@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
     previewJobs: [],
     suggestedRoles: [],
     activeRoleTargets: [],
+    searchStage: "idle",
     sourceFetchMetrics: []
   };
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Carica un CV PDF valido per avviare l'analisi." }, { status: 400 });
   }
 
-  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
+  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, searchStage, sourceFetchMetrics } =
     await fetchJobs(filters, cvProfile);
 
   const response: SearchResponse = {
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
     previewJobs,
     suggestedRoles,
     activeRoleTargets,
+    searchStage,
     sourceFetchMetrics
   };
 

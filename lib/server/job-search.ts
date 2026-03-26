@@ -12,7 +12,7 @@ import { evaluatePrivateExperienceAlignment } from "@/lib/server/agents/private-
 import { evaluatePublicAdministrationRequirements } from "@/lib/server/agents/public-requirements-agent";
 import { privateJobsSeed } from "@/lib/data/private-jobs";
 import { getEligibleSourceRegistryEntries } from "@/lib/server/source-registry";
-import { CvProfile, Job, JobFilters, SourceDomain, SourceFetchMetrics, SourceGovernance } from "@/lib/types";
+import { CvProfile, Job, JobFilters, SearchStage, SourceDomain, SourceFetchMetrics, SourceGovernance } from "@/lib/types";
 
 type SearchJobsResult = {
   jobs: Job[];
@@ -21,6 +21,7 @@ type SearchJobsResult = {
   previewJobs: Job[];
   suggestedRoles: string[];
   activeRoleTargets: string[];
+  searchStage: SearchStage;
   sourceFetchMetrics: SourceFetchMetrics[];
 };
 
@@ -728,6 +729,14 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const activeRoleTargets = aggregateRoleLabels(filters.roleTargets ?? [], 12);
   const hasAppliedCvRoles = hasAppliedExtractedCvRoles(cvProfile, activeRoleTargets);
   const hasSemanticTargets = hasSemanticExpansionTargets(cvProfile, activeRoleTargets);
+  const searchStage: SearchStage =
+    activeRoleTargets.length === 0
+      ? "cv_analysis"
+      : hasSemanticTargets
+        ? "semantic_expansion_search"
+        : hasAppliedCvRoles
+          ? "extracted_role_search"
+          : "cv_analysis";
   const roleTargets = expandRoleTerms(activeRoleTargets);
   const queryTokens = tokenize(filters.q ?? "");
   const sourceEntries = getEligibleSourceRegistryEntries(filters, cvProfile);
@@ -921,6 +930,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     previewJobs: filteredJobs.slice(0, 3),
     suggestedRoles: hasAppliedCvRoles ? buildSuggestedRoles(cvProfile, scopedJobs) : [],
     activeRoleTargets,
+    searchStage,
     sourceFetchMetrics
   };
 }
