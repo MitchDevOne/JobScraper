@@ -363,9 +363,9 @@ export function JobDashboard() {
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedSuggestedRoles.length > 0
-      ? "Rianalizza con i ruoli suggeriti selezionati dall'utente"
+      ? "Rilancia la ricerca con i ruoli suggeriti selezionati"
       : suggestedRoles.length > 0
-        ? "Rianalizza con tutti i ruoli suggeriti"
+        ? "Rilancia la ricerca con tutti i ruoli suggeriti"
         : "Rianalizza CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
@@ -773,6 +773,11 @@ export function JobDashboard() {
             >
               {reanalyzeLabel}
             </button>
+            {analysisReady && suggestedRoles.length > 0 ? (
+              <p className="md:col-span-12 xl:col-span-6 text-sm leading-6 text-black/60">
+                Seleziona alcuni ruoli suggeriti per un rilancio piu mirato, oppure lascia invariata la selezione per usare l&apos;intero set suggerito.
+              </p>
+            ) : null}
           </form>
 
           {errorMessage ? (
@@ -855,8 +860,8 @@ export function JobDashboard() {
                               </div>
                               <p className="mt-3 text-sm leading-6 text-black/60">
                                 {selectedSuggestedRoles.length > 0
-                                  ? `Selezionati per il prossimo rilancio backend: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                                  : "Seleziona uno o piu ruoli: il backend li combinera con keyword, skill e segnali del CV."}
+                                  ? `Ruoli suggeriti selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                                  : "Seleziona alcuni ruoli suggeriti per restringere la ricerca, oppure rilancia con l'intero set proposto."}
                               </p>
                             </>
                           ) : (
