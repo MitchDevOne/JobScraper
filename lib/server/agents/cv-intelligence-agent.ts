@@ -388,7 +388,7 @@ export function buildEnhancedCvProfile(text: string): CvProfile {
   const studyAreas = dedupe(collectAliasMatches(text, studyAreaAliases));
   const preferredLocations = dedupe(locationMatchers.filter((location) => normalizeForMatch(text).includes(location)));
   const yearsOfExperience = inferYearsOfExperience(text);
-  const titles = aggregateRoleLabels([...experienceTitles, ...genericTitles]);
+  const titles = experienceTitles.length > 0 ? aggregateRoleLabels(experienceTitles) : aggregateRoleLabels(genericTitles);
 
   return {
     keywords,
