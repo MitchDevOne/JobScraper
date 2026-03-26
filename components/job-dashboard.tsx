@@ -153,6 +153,7 @@ function resetSearchState(setters: {
   setConsultedSources: (sources: string[]) => void;
   setPreviewJobs: (jobs: Job[]) => void;
   setSuggestedRoles: (roles: string[]) => void;
+  setSelectedRoleTargets: (roles: string[]) => void;
   setActiveRoleTargets: (roles: string[]) => void;
   setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
 }) {
@@ -165,6 +166,7 @@ function resetSearchState(setters: {
   setters.setConsultedSources([]);
   setters.setPreviewJobs([]);
   setters.setSuggestedRoles([]);
+  setters.setSelectedRoleTargets([]);
   setters.setActiveRoleTargets([]);
   setters.setSourceFetchMetrics([]);
 }
@@ -181,6 +183,7 @@ function applyResponseState(
     setConsultedSources: (sources: string[]) => void;
     setPreviewJobs: (jobs: Job[]) => void;
     setSuggestedRoles: (roles: string[]) => void;
+    setSelectedRoleTargets: (roles: string[]) => void;
     setActiveRoleTargets: (roles: string[]) => void;
     setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
   }
@@ -207,6 +210,7 @@ function applyResponseState(
     setters.setConsultedSources(payload.consultedSources);
     setters.setPreviewJobs(payload.previewJobs);
     setters.setSuggestedRoles(payload.suggestedRoles);
+    setters.setSelectedRoleTargets([]);
     setters.setActiveRoleTargets(payload.activeRoleTargets);
     setters.setSourceFetchMetrics(payload.sourceFetchMetrics ?? []);
   });
@@ -357,11 +361,12 @@ export function JobDashboard() {
     cvProfile &&
       activeRoleTargets.some((role) => cvProfile.titles.some((title) => normalizeRoleLabel(title) === normalizeRoleLabel(role)))
   );
+  const hasSemanticExpansionRoles = hasAppliedExtractedRoles && suggestedRoles.length > 0;
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedRoleTargets.length > 0
       ? "Rilancia la ricerca con le figure suggerite selezionate"
-      : suggestedRoles.length > 0
+      : hasSemanticExpansionRoles
         ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
         : hasExtractedRoleTargets && !hasAppliedExtractedRoles
           ? "Rilancia la ricerca con i ruoli estratti dal CV"
@@ -447,6 +452,7 @@ export function JobDashboard() {
         setConsultedSources,
         setPreviewJobs,
         setSuggestedRoles,
+        setSelectedRoleTargets,
         setActiveRoleTargets,
         setSourceFetchMetrics
       });
@@ -462,6 +468,7 @@ export function JobDashboard() {
         setConsultedSources,
         setPreviewJobs,
         setSuggestedRoles,
+        setSelectedRoleTargets,
         setActiveRoleTargets,
         setSourceFetchMetrics
       });
@@ -486,6 +493,7 @@ export function JobDashboard() {
         setConsultedSources,
         setPreviewJobs,
         setSuggestedRoles,
+        setSelectedRoleTargets,
         setActiveRoleTargets,
         setSourceFetchMetrics
       });
@@ -501,6 +509,7 @@ export function JobDashboard() {
         setConsultedSources,
         setPreviewJobs,
         setSuggestedRoles,
+        setSelectedRoleTargets,
         setActiveRoleTargets,
         setSourceFetchMetrics
       });
@@ -774,44 +783,52 @@ export function JobDashboard() {
               </p>
             </label>
 
-            {analysisReady && suggestedRoles.length > 0 ? (
-              <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4 md:col-span-12 xl:col-span-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Figure suggerite selezionabili</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {suggestedRoles.map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => toggleRoleTarget(role)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        selectedRoleTargets.includes(role)
-                          ? "border-[#4f46e5] bg-[linear-gradient(135deg,#e0e7ff,#ede9fe)] text-[#312e81] shadow-sm"
-                          : "border-[#c7d2fe] bg-[#f8faff] text-[#4338ca] hover:border-[#818cf8] hover:bg-[#eef2ff]"
-                      }`}
-                    >
-                      {titleCase(role)}
-                    </button>
-                  ))}
+            {analysisReady && hasSemanticExpansionRoles ? (
+              <div className="space-y-4 md:col-span-12 xl:col-span-6">
+                <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli espansi semanticamente selezionabili</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {suggestedRoles.map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => toggleRoleTarget(role)}
+                        className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                          selectedRoleTargets.includes(role)
+                            ? "border-[#4f46e5] bg-[linear-gradient(135deg,#e0e7ff,#ede9fe)] text-[#312e81] shadow-sm"
+                            : "border-[#c7d2fe] bg-[#f8faff] text-[#4338ca] hover:border-[#818cf8] hover:bg-[#eef2ff]"
+                        }`}
+                      >
+                        {titleCase(role)}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-black/60">
+                    {selectedRoleTargets.length > 0
+                      ? `Ruoli espansi semanticamente selezionati per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
+                      : "Questi ruoli non sono estratti direttamente dal CV: sono espansioni semantiche proposte dal modello. Puoi selezionarne alcuni per il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutto il set suggerito."}
+                  </p>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-black/60">
-                  {selectedRoleTargets.length > 0
-                    ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
-                    : "Puoi selezionare alcune figure suggerite per ampliare o restringere semanticamente il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."}
-                </p>
+
+                <button
+                  type="submit"
+                  disabled={loading || !cvFile}
+                  className="w-full rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {reanalyzeLabel}
+                </button>
               </div>
-            ) : null}
+            ) : (
+              <button
+                type="submit"
+                disabled={loading || !cvFile}
+                className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 xl:col-span-6"
+              >
+                {reanalyzeLabel}
+              </button>
+            )}
 
-            <button
-              type="submit"
-              disabled={loading || !cvFile}
-              className={`rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 ${
-                analysisReady && suggestedRoles.length > 0 ? "xl:col-span-12" : "xl:col-span-6"
-              }`}
-            >
-              {reanalyzeLabel}
-            </button>
-
-            {analysisReady && hasExtractedRoleTargets && suggestedRoles.length === 0 ? (
+            {analysisReady && hasExtractedRoleTargets && !hasSemanticExpansionRoles ? (
               <div className="rounded-[24px] border border-[#dbe4ff] bg-[#f8faff] p-4 text-sm text-black/65 md:col-span-12 xl:col-span-12">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Sequenza di affinamento</p>
                 <p className="mt-3 leading-6">
@@ -903,13 +920,14 @@ export function JobDashboard() {
                         </div>
 
                         <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli trovati e campo semantico</p>
                           <p className="mt-3 text-sm leading-6 text-black/70">
-                            {formatList(
-                              hasAppliedExtractedRoles ? [...cvProfile.titles, ...suggestedRoles] : cvProfile.titles,
-                              "I ruoli estratti compariranno qui dopo l'analisi",
-                              6
-                            )}
+                            {formatList(cvProfile.titles, "I ruoli estratti compariranno qui dopo l'analisi", 6)}
+                          </p>
+                          <p className="mt-3 text-sm leading-6 text-black/55">
+                            {suggestedRoles.length > 0
+                              ? `Ruoli espansi semanticamente disponibili per il rilancio: ${formatList(suggestedRoles, "nessuno", 6)}`
+                              : "I ruoli espansi semanticamente compaiono solo dopo il primo rilancio basato sui ruoli trovati."}
                           </p>
                         </div>
                       </div>
@@ -930,7 +948,7 @@ export function JobDashboard() {
                       <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
                         <p className="mt-3 text-sm leading-6 text-black/75">
-                          Prima il backend usa i ruoli estratti dal CV insieme a keyword, skill, seniority stimata e aree di esperienza. Solo dal rilancio successivo elabora e aggiunge le figure suggerite.
+                          I ruoli trovati sono segnali estratti dal CV e alimentano automaticamente la prima ricerca. I ruoli espansi semanticamente vengono invece proposti dopo, come layer aggiuntivo selezionabile per ampliare il campo di ricerca.
                         </p>
                       </div>
                     </div>
