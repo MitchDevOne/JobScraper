@@ -579,6 +579,15 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   return rankedRoles.length > 0 ? rankedRoles : [...explicitTitles].slice(0, 6);
 }
 
+function hasAppliedExtractedCvRoles(cvProfile: CvProfile | null, activeRoleTargets: string[]) {
+  if (!cvProfile || cvProfile.titles.length === 0 || activeRoleTargets.length === 0) {
+    return false;
+  }
+
+  const extractedRoles = new Set(aggregateRoleLabels(cvProfile.titles, 16).map(normalizeRoleLabel));
+  return activeRoleTargets.some((role) => extractedRoles.has(normalizeRoleLabel(role)));
+}
+
 function buildOrganizationNatureNote(governance: SourceGovernance, domain: SourceDomain) {
   if (governance === "private") {
     return null;
@@ -697,6 +706,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   const requestedLocation = filters.location?.trim() ?? "";
   const locationScope = filters.locationScope ?? "metro";
   const activeRoleTargets = aggregateRoleLabels(filters.roleTargets ?? [], 12);
+  const hasAppliedCvRoles = hasAppliedExtractedCvRoles(cvProfile, activeRoleTargets);
   const roleTargets = expandRoleTerms(activeRoleTargets);
   const queryTokens = tokenize(filters.q ?? "");
   const sourceEntries = getEligibleSourceRegistryEntries(filters, cvProfile);
@@ -861,7 +871,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     publicPotentialJobs,
     consultedSources: buildConsultedSources(jobs, requestedLocation, locationScope),
     previewJobs: filteredJobs.slice(0, 3),
-    suggestedRoles: activeRoleTargets.length > 0 ? buildSuggestedRoles(cvProfile, filteredJobs) : [],
+    suggestedRoles: hasAppliedCvRoles ? buildSuggestedRoles(cvProfile, filteredJobs) : [],
     activeRoleTargets,
     sourceFetchMetrics
   };

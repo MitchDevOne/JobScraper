@@ -53,6 +53,10 @@ function titleCase(input: string) {
   return input.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function normalizeRoleLabel(input: string) {
+  return input.trim().toLowerCase();
+}
+
 function formatList(items: string[], emptyLabel: string, limit = 3) {
   if (items.length === 0) {
     return emptyLabel;
@@ -349,7 +353,10 @@ export function JobDashboard() {
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
   const hasExtractedRoleTargets = Boolean(cvProfile && cvProfile.titles.length > 0);
-  const hasAppliedExtractedRoles = activeRoleTargets.length > 0;
+  const hasAppliedExtractedRoles = Boolean(
+    cvProfile &&
+      activeRoleTargets.some((role) => cvProfile.titles.some((title) => normalizeRoleLabel(title) === normalizeRoleLabel(role)))
+  );
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedSuggestedRoles.length > 0
