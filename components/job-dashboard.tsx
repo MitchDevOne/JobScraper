@@ -871,18 +871,9 @@ export function JobDashboard() {
             </div>
           ) : null}
 
-          <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-            <div className="space-y-6">
-              <Panel title="Sintesi matching" subtitle="Contatori principali e stato del ranking">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
-                  <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
-                  <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
-                  <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
-                </div>
-              </Panel>
-
-              <Panel title="Profilo CV estratto" subtitle="Titoli, skill, esperienza e studio normalizzati">
+          <div className="space-y-6">
+            <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+              <Panel title="Profilo CV estratto" subtitle="Profilo, ruoli suggeriti e keyword operative nello stesso flusso">
                 {cvProfile ? (
                   <div className="space-y-5 text-sm text-black/75">
                     <div className="rounded-[22px] border border-[#d7c1ae] bg-[#f7ede5] p-4">
@@ -890,33 +881,35 @@ export function JobDashboard() {
                       <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
                     </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {cvProfile.titles.length > 0 ? (
-                          cvProfile.titles.map((title) => (
-                            <span key={title} className="rounded-full border border-black/10 bg-[#eef5f1] px-3 py-1 text-xs">
-                              {titleCase(title)}
-                            </span>
-                          ))
-                        ) : (
-                          <EmptyPill text="Nessun ruolo chiaro estratto dal CV." />
-                        )}
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {cvProfile.titles.length > 0 ? (
+                            cvProfile.titles.map((title) => (
+                              <span key={title} className="rounded-full border border-black/10 bg-[#eef5f1] px-3 py-1 text-xs">
+                                {titleCase(title)}
+                              </span>
+                            ))
+                          ) : (
+                            <EmptyPill text="Nessun ruolo chiaro estratto dal CV." />
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Skill rilevate</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {cvProfile.skills.length > 0 ? (
-                          cvProfile.skills.map((skill) => (
-                            <span key={skill} className="rounded-full border border-black/10 px-3 py-1 text-xs">
-                              {titleCase(skill)}
-                            </span>
-                          ))
-                        ) : (
-                          <EmptyPill text="Nessuna skill rilevata." />
-                        )}
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.16em] text-black/45">Skill rilevate</p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {cvProfile.skills.length > 0 ? (
+                            cvProfile.skills.map((skill) => (
+                              <span key={skill} className="rounded-full border border-black/10 px-3 py-1 text-xs">
+                                {titleCase(skill)}
+                              </span>
+                            ))
+                          ) : (
+                            <EmptyPill text="Nessuna skill rilevata." />
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -927,133 +920,130 @@ export function JobDashboard() {
                       <p>Anni stimati: {cvProfile.yearsOfExperience ?? "n.d."}</p>
                     </div>
 
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {cvKeywords.length > 0 ? (
-                          cvKeywords.slice(0, 10).map((keyword) => (
-                            <span key={keyword} className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs">
-                              {titleCase(keyword)}
-                            </span>
-                          ))
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti</p>
+                        {suggestedRoles.length > 0 ? (
+                          <>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {suggestedRoles.map((role) => (
+                                <button
+                                  key={role}
+                                  type="button"
+                                  onClick={() => toggleSuggestedRole(role)}
+                                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                                    selectedSuggestedRoles.includes(role)
+                                      ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
+                                      : "border-black/10 bg-white hover:bg-[#f3ebe3]"
+                                  }`}
+                                >
+                                  {titleCase(role)}
+                                </button>
+                              ))}
+                            </div>
+                            <p className="mt-3 text-sm leading-6 text-black/60">
+                              {selectedSuggestedRoles.length > 0
+                                ? `Selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                                : "Seleziona uno o piu ruoli per restringere la ricerca reale."}
+                            </p>
+                          </>
                         ) : (
-                          <EmptyPill text="Keyword non ancora disponibili." />
+                          <p className="mt-3 text-sm leading-6 text-black/65">
+                            Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
+                          </p>
                         )}
                       </div>
+
+                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
+                        <p className="mt-3 text-sm leading-6 text-black/65">
+                          Queste keyword vengono estratte dal profilo e usate come segnali operativi per cercare e ordinare posizioni.
+                        </p>
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {cvKeywords.length > 0 ? (
+                            cvKeywords.map((keyword, index) => (
+                              <span
+                                key={keyword}
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${keywordToneClass(index)}`}
+                              >
+                                {keyword}
+                              </span>
+                            ))
+                          ) : (
+                            <EmptyPill text="Keyword testuali non ancora disponibili." />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
+                        <p className="mt-3 text-sm leading-6 text-black/70">
+                          {formatList(
+                            [...cvProfile.titles, ...suggestedRoles],
+                            "I ruoli estratti compariranno qui dopo l'analisi",
+                            6
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
+                        <p className="mt-3 text-sm leading-6 text-black/70">
+                          {`${formatList(cvProfile.skills, "Skill in attesa", 5)}. Esperienza: ${formatList(
+                            cvProfile.experienceAreas,
+                            "non classificata",
+                            3
+                          )}.`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Come viene usato</p>
+                      <p className="mt-3 text-sm leading-6 text-black/75">
+                        Le keyword aiutano soprattutto su bandi e avvisi pubblici, mentre per il privato vengono combinate con
+                        titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                      </p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm leading-6 text-black/65">
-                    Carica un CV PDF per generare un sommario ragionato del profilo lavorativo, con ruolo prevalente,
-                    competenze chiave, esperienza e contesto formativo.
-                  </p>
-                )}
-              </Panel>
-
-              <Panel title="Ruoli suggeriti" subtitle="Target simili al profilo estratto che puoi rilanciare">
-                {suggestedRoles.length > 0 ? (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedRoles.map((role) => (
-                        <button
-                          key={role}
-                          type="button"
-                          onClick={() => toggleSuggestedRole(role)}
-                          className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                            selectedSuggestedRoles.includes(role)
-                              ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
-                              : "border-black/10 bg-white hover:bg-[#f3ebe3]"
-                          }`}
-                        >
-                          {titleCase(role)}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="mt-3 text-sm text-black/60">
-                      {selectedSuggestedRoles.length > 0
-                        ? `Selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                        : "Seleziona uno o piu ruoli per restringere la ricerca reale."}
+                  <div className="space-y-4">
+                    <p className="text-sm leading-6 text-black/65">
+                      Carica un CV PDF per generare un sommario ragionato del profilo lavorativo, con ruolo prevalente,
+                      competenze chiave, esperienza, ruoli suggeriti e keyword operative.
                     </p>
-                  </>
-                ) : (
-                  <p className="text-sm leading-6 text-black/65">
-                    Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword
-                    estratte, da usare per affinare la ricerca.
-                  </p>
-                )}
-              </Panel>
-
-              <Panel title="Keyword CV" subtitle="Segnali lessicali piu frequenti estratti dal profilo">
-                <div className="space-y-4">
-                  <p className="text-sm leading-6 text-black/65">
-                    Queste keyword vengono estratte dall&apos;agent e usate come segnali operativi per cercare e ordinare posizioni
-                    pubbliche e private, insieme al contesto completo del CV.
-                  </p>
-
-                  {cvKeywords.length > 0 || cvProfile ? (
-                    <>
-                      <div className="flex flex-wrap gap-2">
-                        {cvKeywords.length > 0 ? (
-                          cvKeywords.map((keyword, index) => (
-                            <span
-                              key={keyword}
-                              className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${keywordToneClass(index)}`}
-                            >
-                              {keyword}
-                            </span>
-                          ))
-                        ) : (
-                          <EmptyPill text="Keyword testuali non ancora disponibili." />
-                        )}
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
-                          <p className="mt-3 text-sm leading-6 text-black/70">
-                            {cvProfile
-                              ? formatList(
-                                  [...cvProfile.titles, ...suggestedRoles],
-                                  "I ruoli estratti compariranno qui dopo l'analisi",
-                                  6
-                                )
-                              : "I ruoli estratti compariranno qui dopo l'analisi."}
-                          </p>
-                        </div>
-
-                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
-                          <p className="mt-3 text-sm leading-6 text-black/70">
-                            {cvProfile
-                              ? `${formatList(cvProfile.skills, "Skill in attesa", 5)}. Esperienza: ${formatList(
-                                  cvProfile.experienceAreas,
-                                  "non classificata",
-                                  3
-                                )}.`
-                              : "Skill ed esperienza del CV saranno usate per raffinare il matching oltre alle keyword."}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Come viene usato</p>
-                        <p className="mt-3 text-sm leading-6 text-black/75">
-                          Le keyword aiutano soprattutto su bandi e avvisi pubblici, mentre per il privato vengono combinate con
-                          titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti</p>
+                        <p className="mt-3 text-sm leading-6 text-black/65">
+                          Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
                         </p>
                       </div>
-                    </>
-                  ) : (
-                    <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
-                      <p className="text-sm leading-6 text-black/65">
-                        Dopo la lettura del CV qui vedrai keyword operative, ruoli affini e segnali di contesto usati dal
-                        motore per cercare offerte pubbliche e private con un matching piu preciso.
-                      </p>
+                      <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
+                        <p className="mt-3 text-sm leading-6 text-black/65">
+                          Dopo la lettura del CV qui vedrai keyword operative e segnali di contesto usati dal motore.
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </Panel>
 
+              <Panel title="Sintesi matching" subtitle="Contatori principali e stato del ranking">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
+                  <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
+                  <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
+                  <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
+                </div>
+              </Panel>
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
               <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
                 <div className="flex flex-wrap gap-2">
                   {consultedSources.length > 0 ? (
@@ -1067,9 +1057,7 @@ export function JobDashboard() {
                   )}
                 </div>
               </Panel>
-            </div>
 
-            <div className="space-y-6">
               <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
@@ -1126,7 +1114,6 @@ export function JobDashboard() {
                   )}
                 </div>
               </Panel>
-
             </div>
           </div>
         </div>
