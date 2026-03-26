@@ -41,15 +41,6 @@ function formatDate(input: string | null) {
   }).format(new Date(input));
 }
 
-function formatTimestamp(input: string) {
-  return new Intl.DateTimeFormat("it-IT", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(input));
-}
-
 function formatDuration(input: number) {
   if (input < 1000) {
     return `${input} ms`;
@@ -709,39 +700,15 @@ export function JobDashboard() {
               <StepPill step="03" title="Affina la ricerca" active={currentStep === 3} done={false} />
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="space-y-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#155b4a]">Torino focus</p>
-                <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
-                  Leggi il CV, spiega il match e mostra solo opportunita utili per Torino.
-                </h1>
-                <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
-                  Il frontend ora separa analisi, ricerca e verifica delle fonti. Prima capisci il profilo estratto, poi
-                  affini i ruoli suggeriti e infine apri le offerte migliori.
-                </p>
-              </div>
-
-              <Panel title="Sintesi rapida" subtitle="Una vista piu leggibile dello stato corrente">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoCard label="Risultati" value={total} hint="Posizioni compatibili mostrate in lista." tone="warm" />
-                  <InfoCard
-                    label="Fonti vive"
-                    value={consultedSources.length}
-                    hint="Sorgenti realmente interrogate per questi filtri."
-                    tone="cool"
-                  />
-                  <InfoCard
-                    label="Target di ricerca"
-                    value={activeRoleTargets.length}
-                    hint="Ruoli attivi usati per filtrare e ordinare i risultati."
-                  />
-                  <InfoCard
-                    label="Ultimo refresh"
-                    value={lastUpdatedAt ? formatTimestamp(lastUpdatedAt) : "Pronto"}
-                    hint="Aggiornato dopo l'ultima ricerca."
-                  />
-                </div>
-              </Panel>
+            <div className="space-y-4">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#155b4a]">Torino focus</p>
+              <h1 className="max-w-4xl font-[var(--font-display)] text-4xl font-bold leading-tight md:text-6xl">
+                Leggi il CV, spiega il match e mostra solo opportunita utili per Torino.
+              </h1>
+              <p className="max-w-2xl text-base leading-7 text-black/70 md:text-lg">
+                Il frontend ora separa analisi, ricerca e verifica delle fonti. Prima capisci il profilo estratto, poi
+                affini i ruoli suggeriti e infine apri le offerte migliori.
+              </p>
             </div>
           </div>
 
