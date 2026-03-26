@@ -85,13 +85,35 @@ function buildCvProfileSummary(profile: CvProfile | null) {
     return "";
   }
 
-  const titles = formatList(profile.titles, "ruolo non chiaramente identificato", 2);
-  const skills = formatList(profile.skills, "skill da confermare", 3);
-  const experience = formatList(profile.experienceAreas, "esperienza non classificata", 2);
-  const study = formatList(profile.studyAreas, "studio non classificato", 2);
-  const yearsLabel = profile.yearsOfExperience ? `${profile.yearsOfExperience}+ anni stimati` : "anzianita non stimata";
+  const primaryRole = profile.titles[0] ? titleCase(profile.titles[0]) : "profilo professionale da chiarire";
+  const secondaryRoles = profile.titles.slice(1, 3).map(titleCase);
+  const skills = profile.skills.slice(0, 4).map(titleCase);
+  const experience = profile.experienceAreas.slice(0, 3).map(titleCase);
+  const study = profile.studyAreas.slice(0, 2).map(titleCase);
 
-  return `Profilo orientato a ${titles}, con focus su ${skills}. Esperienza in ${experience}, formazione in ${study} e ${yearsLabel}.`;
+  const parts = [`Il CV descrive soprattutto un profilo ${primaryRole}.`];
+
+  if (secondaryRoles.length > 0) {
+    parts.push(`Ruoli affini emersi: ${secondaryRoles.join(", ")}.`);
+  }
+
+  if (skills.length > 0) {
+    parts.push(`Competenze piu evidenti: ${skills.join(", ")}.`);
+  }
+
+  if (experience.length > 0) {
+    parts.push(`Aree di esperienza: ${experience.join(", ")}.`);
+  }
+
+  if (study.length > 0) {
+    parts.push(`Contesto formativo: ${study.join(", ")}.`);
+  }
+
+  if (profile.yearsOfExperience) {
+    parts.push(`Esperienza stimata: circa ${profile.yearsOfExperience}+ anni.`);
+  }
+
+  return parts.join(" ");
 }
 
 function keywordToneClass(index: number) {
@@ -102,31 +124,6 @@ function keywordToneClass(index: number) {
   ];
 
   return tones[index % tones.length];
-}
-
-function buildNextActionText(input: {
-  hasCvFile: boolean;
-  analysisReady: boolean;
-  hasSuggestedRoles: boolean;
-  selectedSuggestedRoles: number;
-}) {
-  if (!input.hasCvFile) {
-    return "Carica un CV PDF per attivare l'estrazione del profilo e leggere subito ruoli, skill e segnali di compatibilita.";
-  }
-
-  if (!input.analysisReady) {
-    return "Il file e pronto. Avvia l'analisi per trasformare il CV in profilo strutturato e generare ruoli affini.";
-  }
-
-  if (input.hasSuggestedRoles && input.selectedSuggestedRoles > 0) {
-    return "Hai gia selezionato dei ruoli suggeriti: ora puoi rilanciare la ricerca con un target piu preciso.";
-  }
-
-  if (input.hasSuggestedRoles) {
-    return "Il profilo e stato letto. Scegli uno o piu ruoli suggeriti e rilancia la ricerca per stringere il matching.";
-  }
-
-  return "Il profilo e stato letto. Controlla la sintesi estratta e, se serve, aggiorna i filtri o prova una nuova analisi.";
 }
 
 function sectorBadgeClass(sector: SectorType) {
@@ -201,16 +198,47 @@ function applyResponseState(
     setSourceFetchMetrics: (metrics: SourceFetchMetrics[]) => void;
   }
 ) {
+  const derivedKeywords =
+    payload.cvKeywords.length > 0
+      ? payload.cvKeywords
+      : payload.cvProfile
+        ? [
+            ...payload.cvProfile.keywords,
+            ...payload.cvProfile.skills,
+            ...payload.cvProfile.titles,
+            ...payload.cvProfile.experienceAreas
+          ].filter((value, index, items) => Boolean(value) && items.indexOf(value) === index)
+        : [];
+
   startTransition(() => {
     setters.setJobs(payload.jobs);
     setters.setPublicPotentialJobs(payload.publicPotentialJobs);
     setters.setTotal(payload.total);
-    setters.setCvKeywords(payload.cvKeywords);
+    setters.setCvKeywords(derivedKeywords);
     setters.setCvProfile(payload.cvProfile);
     setters.setLastUpdatedAt(payload.lastUpdatedAt);
     setters.setConsultedSources(payload.consultedSources);
     setters.setPreviewJobs(payload.previewJobs);
-    setters.setSuggestedRoles(payload.suggestedRoles);
+    setters.setSuggestedRoles(
+      payload.suggestedRoles.length > 0
+        ? payload.suggestedRoles
+        : payload.cvProfile
+          ? [
+              ...payload.cvProfile.titles,
+              ...payload.cvProfile.skills.flatMap((skill) =>
+                skill === "react"
+                  ? ["frontend developer", "full stack developer"]
+                  : ["java", "python", "node.js", ".net"].includes(skill)
+                    ? ["backend developer", "software engineer"]
+                    : ["sql", "power bi", "data analysis"].includes(skill)
+                      ? ["data analyst", "business analyst"]
+                      : skill === "project management"
+                        ? ["project management officer", "project manager"]
+                        : []
+              )
+            ].filter((value, index, items) => Boolean(value) && items.indexOf(value) === index)
+          : []
+    );
     setters.setActiveRoleTargets(payload.activeRoleTargets);
     setters.setSourceFetchMetrics(payload.sourceFetchMetrics ?? []);
   });
@@ -331,14 +359,8 @@ export function JobDashboard() {
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
-  const nextActionText = buildNextActionText({
-    hasCvFile: Boolean(cvFile),
-    analysisReady,
-    hasSuggestedRoles: suggestedRoles.length > 0,
-    selectedSuggestedRoles: selectedSuggestedRoles.length
-  });
 
-  const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = []) => {
+  const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
     setErrorMessage("");
 
@@ -355,8 +377,10 @@ export function JobDashboard() {
         formData.set("locationScope", locationScope);
         formData.set("roleTargets", JSON.stringify(roleTargets));
 
-        if (cvFile) {
-          formData.set("cv", cvFile);
+        const fileToSend = cvFileOverride ?? cvFile;
+
+        if (fileToSend) {
+          formData.set("cv", fileToSend);
         }
 
         response = await fetch("/api/jobs", {
@@ -482,6 +506,45 @@ export function JobDashboard() {
         setSourceFetchMetrics
       });
       setSelectedSuggestedRoles([]);
+      setAnalysisReady(false);
+    }
+  }
+
+  async function runCvAnalysis(file: File) {
+    setCvFile(file);
+    setAnalysisReady(false);
+    setSelectedSuggestedRoles([]);
+
+    try {
+      const payload = await requestJobs(true, [], file);
+      applyResponseState(payload, {
+        setJobs,
+        setPublicPotentialJobs,
+        setTotal,
+        setCvKeywords,
+        setCvProfile,
+        setLastUpdatedAt,
+        setConsultedSources,
+        setPreviewJobs,
+        setSuggestedRoles,
+        setActiveRoleTargets,
+        setSourceFetchMetrics
+      });
+      setAnalysisReady(true);
+    } catch {
+      resetSearchState({
+        setJobs,
+        setPublicPotentialJobs,
+        setTotal,
+        setCvKeywords,
+        setCvProfile,
+        setLastUpdatedAt,
+        setConsultedSources,
+        setPreviewJobs,
+        setSuggestedRoles,
+        setActiveRoleTargets,
+        setSourceFetchMetrics
+      });
       setAnalysisReady(false);
     }
   }
@@ -765,11 +828,18 @@ export function JobDashboard() {
               <input
                 type="file"
                 accept="application/pdf"
-                onChange={(event) => setCvFile(event.target.files?.[0] ?? null)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setCvFile(file);
+
+                  if (file) {
+                    void runCvAnalysis(file);
+                  }
+                }}
                 className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[#17312b] file:px-4 file:py-2 file:font-semibold file:text-white"
               />
               <p className="mt-3 text-sm text-black/60">
-                Il CV viene usato solo nella sessione corrente e va ricaricato a ogni nuova analisi.
+                Il CV viene analizzato nella sessione corrente appena lo carichi e va ricaricato a ogni nuova analisi.
               </p>
             </label>
 
@@ -780,12 +850,16 @@ export function JobDashboard() {
                   ? "Sto aggiornando il matching."
                   : analysisReady
                     ? "CV analizzato e ricerca affinata."
-                    : "Carica un CV per attivare il matching guidato."}
+                    : cvFile
+                      ? "CV caricato, analisi in preparazione."
+                      : "Carica un CV per attivare il matching guidato."}
               </p>
               <p className="mt-2 text-sm text-white/70">
                 {analysisReady
                   ? "Puoi selezionare i ruoli suggeriti e rilanciare la ricerca con un target piu stretto."
-                  : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
+                  : cvFile
+                    ? "Sto leggendo il CV per estrarre profilo, keyword operative e ruoli affini."
+                    : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
               </p>
             </div>
 
@@ -794,7 +868,7 @@ export function JobDashboard() {
               disabled={loading || !cvFile}
               className="rounded-[24px] bg-[#b4622a] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 xl:col-span-1"
             >
-              {loading ? "Analizzo..." : "Analizza CV e aggiorna"}
+              {loading ? "Analizzo..." : "Rianalizza CV"}
             </button>
 
             <button
@@ -886,8 +960,9 @@ export function JobDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-black/65">
-                    Carica un CV PDF per vedere il profilo estratto e far emergere meglio i motivi di compatibilita.
+                  <p className="text-sm leading-6 text-black/65">
+                    Carica un CV PDF per generare un sommario ragionato del profilo lavorativo, con ruolo prevalente,
+                    competenze chiave, esperienza e contesto formativo.
                   </p>
                 )}
               </Panel>
@@ -918,8 +993,9 @@ export function JobDashboard() {
                     </p>
                   </>
                 ) : (
-                  <p className="text-sm text-black/65">
-                    Dopo l&apos;analisi del CV qui compariranno ruoli affini aggregati dal matching.
+                  <p className="text-sm leading-6 text-black/65">
+                    Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword
+                    estratte, da usare per affinare la ricerca.
                   </p>
                 )}
               </Panel>
@@ -997,56 +1073,6 @@ export function JobDashboard() {
                 </div>
               </Panel>
 
-              <Panel title="Prossimo passo" subtitle="La card iniziale ora guida il flusso invece di mostrare annunci grezzi">
-                <div className="space-y-4">
-                  <div className="rounded-[22px] border border-[#d7c1ae] bg-[#fbf7f3] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8c4b1f]">Cosa fare adesso</p>
-                    <p className="mt-3 text-sm leading-6 text-black/75">{nextActionText}</p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">CV</p>
-                      <p className="mt-2 text-lg font-semibold text-black">{cvFile ? "Caricato" : "Assente"}</p>
-                      <p className="mt-2 text-xs leading-5 text-black/60">
-                        {cvFile ? cvFile.name : "Serve un PDF per sbloccare il profilo estratto."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Profilo</p>
-                      <p className="mt-2 text-lg font-semibold text-black">{cvProfile ? "Estratto" : "In attesa"}</p>
-                      <p className="mt-2 text-xs leading-5 text-black/60">
-                        {cvProfile ? formatList(cvProfile.titles, "Ruoli non rilevati", 2) : "Dopo l'analisi vedrai ruoli, skill ed esperienza."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Rilancio</p>
-                      <p className="mt-2 text-lg font-semibold text-black">
-                        {selectedSuggestedRoles.length > 0 ? `${selectedSuggestedRoles.length} selezionati` : "Da affinare"}
-                      </p>
-                      <p className="mt-2 text-xs leading-5 text-black/60">
-                        {suggestedRoles.length > 0
-                          ? formatList(selectedSuggestedRoles.length > 0 ? selectedSuggestedRoles : suggestedRoles, "Nessun ruolo", 3)
-                          : "I ruoli affini compariranno qui dopo l'analisi del CV."}
-                      </p>
-                    </div>
-                  </div>
-
-                  {analysisReady && previewJobs.length > 0 ? (
-                    <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Prime evidenze</p>
-                      <p className="mt-3 text-sm leading-6 text-black/75">
-                        {`Il ranking corrente ha gia trovato ${previewJobs.length} risultati forti. Il primo match e ${titleCase(
-                          previewJobs[0]?.title ?? ""
-                        )} presso ${previewJobs[0]?.company ?? "fonte disponibile"}.`}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              </Panel>
-
               <Panel title="Keyword CV" subtitle="Segnali lessicali piu frequenti estratti dal profilo">
                 <div className="space-y-4">
                   <p className="text-sm leading-6 text-black/65">
@@ -1110,8 +1136,8 @@ export function JobDashboard() {
                   ) : (
                     <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
                       <p className="text-sm leading-6 text-black/65">
-                        Dopo l&apos;analisi del CV qui vedrai keyword, ruoli affini e segnali di contesto che il motore usera per
-                        cercare offerte pubbliche e private con un matching piu preciso.
+                        Dopo la lettura del CV qui vedrai keyword operative, ruoli affini e segnali di contesto usati dal
+                        motore per cercare offerte pubbliche e private con un matching piu preciso.
                       </p>
                     </div>
                   )}

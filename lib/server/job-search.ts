@@ -372,6 +372,14 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
     candidateRoles.push("project manager", "project management officer");
   }
 
+  if (cvProfile.experienceAreas.includes("public administration")) {
+    candidateRoles.push("business analyst", "project management officer", "responsabile relazioni istituzionali");
+  }
+
+  if (cvProfile.studyAreas.includes("business administration")) {
+    candidateRoles.push("business analyst", "project manager");
+  }
+
   for (const job of jobs) {
     const normalizedTitle = normalizeRoleLabel(job.title);
 
@@ -390,6 +398,27 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
 
   if (relatedRoles.length > 0) {
     return relatedRoles.slice(0, 8);
+  }
+
+  const keywordDrivenFallback = aggregateRoleLabels(
+    [
+      ...cvProfile.titles,
+      ...(cvProfile.skills.includes("react") ? ["frontend developer", "full stack developer"] : []),
+      ...(cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))
+        ? ["backend developer", "software engineer"]
+        : []),
+      ...(cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis"].includes(skill))
+        ? ["data analyst", "business analyst"]
+        : []),
+      ...(cvProfile.skills.includes("project management") || cvProfile.experienceAreas.includes("project management")
+        ? ["project management officer", "project manager"]
+        : [])
+    ],
+    8
+  ).filter((role) => !explicitTitles.has(normalizeRoleLabel(role)));
+
+  if (keywordDrivenFallback.length > 0) {
+    return keywordDrivenFallback;
   }
 
   return [...explicitTitles].slice(0, 6);

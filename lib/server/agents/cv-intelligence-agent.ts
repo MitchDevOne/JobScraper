@@ -239,6 +239,53 @@ export function aggregateRoleLabels(roles: string[], limit = 8) {
   return dedupe(roles.map(normalizeRoleLabel).filter(Boolean)).slice(0, limit);
 }
 
+function inferTitlesFromProfileSignals(input: {
+  keywords: string[];
+  skills: string[];
+  experienceAreas: string[];
+  studyAreas: string[];
+}) {
+  const inferred: string[] = [];
+  const skills = new Set(input.skills.map(normalizeForMatch));
+  const experience = new Set(input.experienceAreas.map(normalizeForMatch));
+  const studyAreas = new Set(input.studyAreas.map(normalizeForMatch));
+  const keywords = new Set(input.keywords.map(normalizeForMatch));
+
+  if (skills.has("react") || skills.has("typescript") || experience.has("frontend")) {
+    inferred.push("frontend developer");
+  }
+
+  if (skills.has("java") || skills.has("python") || skills.has("node.js") || experience.has("backend")) {
+    inferred.push("backend developer");
+  }
+
+  if ((skills.has("react") || experience.has("frontend")) && (skills.has("java") || skills.has("node.js") || experience.has("backend"))) {
+    inferred.push("full stack developer");
+  }
+
+  if (skills.has("sql") || skills.has("power bi") || skills.has("data analysis") || experience.has("analytics") || experience.has("data")) {
+    inferred.push("data analyst");
+  }
+
+  if (skills.has("project management") || experience.has("project management") || keywords.has("pmo")) {
+    inferred.push("project management officer", "project manager");
+  }
+
+  if (skills.has("aws") || skills.has("azure") || skills.has("docker") || skills.has("cloud") || experience.has("cloud")) {
+    inferred.push("cloud engineer");
+  }
+
+  if (studyAreas.has("business administration") || keywords.has("business") || experience.has("digital transformation")) {
+    inferred.push("business analyst");
+  }
+
+  if (studyAreas.has("software") && inferred.length === 0) {
+    inferred.push("software engineer");
+  }
+
+  return aggregateRoleLabels(inferred, 8);
+}
+
 export function expandRoleTerms(roles: string[]) {
   const expanded = new Set<string>();
 
@@ -301,13 +348,19 @@ export function buildEnhancedCvProfile(text: string): CvProfile {
   const keywords = extractKeywords(text, 16);
   const experienceTitles = extractRoleSignalsFromExperience(text);
   const genericTitles = collectAliasMatches(text, titleAliases).filter((title) => !experienceTitles.includes(title));
-  const titles = aggregateRoleLabels([...experienceTitles, ...genericTitles]);
   const skills = dedupe(collectAliasMatches(text, skillAliases));
   const experienceAreas = dedupe(collectAliasMatches(text, experienceAliases));
   const educationLevels = dedupe(collectAliasMatches(text, educationLevelAliases));
   const studyAreas = dedupe(collectAliasMatches(text, studyAreaAliases));
   const preferredLocations = dedupe(locationMatchers.filter((location) => normalizeForMatch(text).includes(location)));
   const yearsOfExperience = inferYearsOfExperience(text);
+  const inferredTitles = inferTitlesFromProfileSignals({
+    keywords,
+    skills,
+    experienceAreas,
+    studyAreas
+  });
+  const titles = aggregateRoleLabels([...experienceTitles, ...genericTitles, ...inferredTitles]);
 
   return {
     keywords,
