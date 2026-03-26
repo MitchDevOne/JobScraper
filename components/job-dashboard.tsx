@@ -747,29 +747,7 @@ export function JobDashboard() {
           </div>
 
           <form onSubmit={handleSubmit} className="grid gap-4 xl:grid-cols-12">
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-4">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
-                Carica CV PDF
-              </span>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(event) => {
-                  const file = event.target.files?.[0] ?? null;
-                  setCvFile(file);
-
-                  if (file) {
-                    void runCvAnalysis(file);
-                  }
-                }}
-                className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[#17312b] file:px-4 file:py-2 file:font-semibold file:text-white"
-              />
-              <p className="mt-3 text-sm text-black/60">
-                Il CV viene analizzato nella sessione corrente appena lo carichi e va ricaricato a ogni nuova analisi.
-              </p>
-            </label>
-
-            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-4">
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-6 xl:col-span-6">
               <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
                 Cerca ruolo o keyword
               </span>
@@ -781,7 +759,7 @@ export function JobDashboard() {
               />
             </label>
 
-            <div className="grid gap-4 md:grid-cols-2 md:col-span-12 xl:col-span-4">
+            <div className="grid gap-4 md:grid-cols-2 md:col-span-12 xl:col-span-6">
               <label className="rounded-[24px] border border-black/10 bg-white/80 p-4">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">Settore</span>
                 <select
@@ -846,25 +824,27 @@ export function JobDashboard() {
               <p className="mt-3 text-sm text-black/60">{selectedLocationScope?.description}</p>
             </label>
 
-            <div className="rounded-[24px] border border-black/10 bg-[#17312b] p-4 text-white md:col-span-12 xl:col-span-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Stato workflow</p>
-              <p className="mt-3 text-2xl font-semibold">
-                {loading
-                  ? "Sto aggiornando il matching."
-                  : analysisReady
-                    ? "CV analizzato e ricerca affinata."
-                    : cvFile
-                      ? "CV caricato, analisi in preparazione."
-                      : "Carica un CV per attivare il matching guidato."}
+            <label className="rounded-[24px] border border-black/10 bg-white/80 p-4 md:col-span-12 xl:col-span-6">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-black/55">
+                Carica CV PDF
+              </span>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  setCvFile(file);
+
+                  if (file) {
+                    void runCvAnalysis(file);
+                  }
+                }}
+                className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[#17312b] file:px-4 file:py-2 file:font-semibold file:text-white"
+              />
+              <p className="mt-3 text-sm text-black/60">
+                Il CV viene analizzato nella sessione corrente appena lo carichi e va ricaricato a ogni nuova analisi.
               </p>
-              <p className="mt-2 text-sm text-white/70">
-                {analysisReady
-                  ? "Puoi selezionare i ruoli suggeriti e rilanciare la ricerca con un target piu stretto."
-                  : cvFile
-                    ? "Sto leggendo il CV per estrarre profilo, keyword operative e ruoli affini."
-                  : "La ricerca iniziale funziona anche senza CV, ma l'analisi del profilo migliora il ranking."}
-              </p>
-            </div>
+            </label>
 
             <button
               type="submit"
