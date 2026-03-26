@@ -70,6 +70,65 @@ function titleCase(input: string) {
   return input.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+function formatList(items: string[], emptyLabel: string, limit = 3) {
+  if (items.length === 0) {
+    return emptyLabel;
+  }
+
+  const visible = items.slice(0, limit).map(titleCase);
+  const suffix = items.length > limit ? ` +${items.length - limit}` : "";
+  return `${visible.join(", ")}${suffix}`;
+}
+
+function buildCvProfileSummary(profile: CvProfile | null) {
+  if (!profile) {
+    return "";
+  }
+
+  const titles = formatList(profile.titles, "ruolo non chiaramente identificato", 2);
+  const skills = formatList(profile.skills, "skill da confermare", 3);
+  const experience = formatList(profile.experienceAreas, "esperienza non classificata", 2);
+  const study = formatList(profile.studyAreas, "studio non classificato", 2);
+  const yearsLabel = profile.yearsOfExperience ? `${profile.yearsOfExperience}+ anni stimati` : "anzianita non stimata";
+
+  return `Profilo orientato a ${titles}, con focus su ${skills}. Esperienza in ${experience}, formazione in ${study} e ${yearsLabel}.`;
+}
+
+function keywordToneClass(index: number) {
+  const tones = [
+    "bg-[#eef5f1] text-[#155b4a] border-[#cfe2d9]",
+    "bg-[#f7ede5] text-[#8c4b1f] border-[#e7cfbb]",
+    "bg-white text-black/75 border-black/10"
+  ];
+
+  return tones[index % tones.length];
+}
+
+function buildNextActionText(input: {
+  hasCvFile: boolean;
+  analysisReady: boolean;
+  hasSuggestedRoles: boolean;
+  selectedSuggestedRoles: number;
+}) {
+  if (!input.hasCvFile) {
+    return "Carica un CV PDF per attivare l'estrazione del profilo e leggere subito ruoli, skill e segnali di compatibilita.";
+  }
+
+  if (!input.analysisReady) {
+    return "Il file e pronto. Avvia l'analisi per trasformare il CV in profilo strutturato e generare ruoli affini.";
+  }
+
+  if (input.hasSuggestedRoles && input.selectedSuggestedRoles > 0) {
+    return "Hai gia selezionato dei ruoli suggeriti: ora puoi rilanciare la ricerca con un target piu preciso.";
+  }
+
+  if (input.hasSuggestedRoles) {
+    return "Il profilo e stato letto. Scegli uno o piu ruoli suggeriti e rilancia la ricerca per stringere il matching.";
+  }
+
+  return "Il profilo e stato letto. Controlla la sintesi estratta e, se serve, aggiorna i filtri o prova una nuova analisi.";
+}
+
 function sectorBadgeClass(sector: SectorType) {
   return sector === "pubblico"
     ? "bg-[#d6efe7] text-[#155b4a]"
@@ -271,6 +330,13 @@ export function JobDashboard() {
   const selectedLocationScope = locationScopes.find((item) => item.value === locationScope);
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
+  const profileSummary = buildCvProfileSummary(cvProfile);
+  const nextActionText = buildNextActionText({
+    hasCvFile: Boolean(cvFile),
+    analysisReady,
+    hasSuggestedRoles: suggestedRoles.length > 0,
+    selectedSuggestedRoles: selectedSuggestedRoles.length
+  });
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = []) => {
     setLoading(true);
@@ -762,6 +828,11 @@ export function JobDashboard() {
               <Panel title="Profilo CV estratto" subtitle="Titoli, skill, esperienza e studio normalizzati">
                 {cvProfile ? (
                   <div className="space-y-5 text-sm text-black/75">
+                    <div className="rounded-[22px] border border-[#d7c1ae] bg-[#f7ede5] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8c4b1f]">Sintesi profilo</p>
+                      <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
+                    </div>
+
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -797,6 +868,21 @@ export function JobDashboard() {
                       <p>Studio: {cvProfile.studyAreas.length > 0 ? cvProfile.studyAreas.join(", ") : "non trovato"}</p>
                       <p>Titoli di studio: {cvProfile.educationLevels.length > 0 ? cvProfile.educationLevels.join(", ") : "non trovati"}</p>
                       <p>Anni stimati: {cvProfile.yearsOfExperience ?? "n.d."}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {cvKeywords.length > 0 ? (
+                          cvKeywords.slice(0, 10).map((keyword) => (
+                            <span key={keyword} className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs">
+                              {titleCase(keyword)}
+                            </span>
+                          ))
+                        ) : (
+                          <EmptyPill text="Keyword non ancora disponibili." />
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -911,42 +997,123 @@ export function JobDashboard() {
                 </div>
               </Panel>
 
-              <Panel title="Preview rapida" subtitle="Anteprima sintetica prima di aprire la fonte">
-                <div className="grid gap-3">
-                  {previewJobs.length > 0 ? (
-                    previewJobs.map((job) => (
-                      <div key={job.id} className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-black">{job.title}</p>
-                            <p className="mt-1 text-xs text-black/60">
-                              {job.company} - {job.location}
-                            </p>
-                          </div>
-                          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${sectorBadgeClass(job.sector)}`}>
-                            {job.sector}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-xs leading-5 text-black/70">{truncateText(job.summary, 120)}</p>
-                        <p className="mt-2 text-xs text-black/55">{job.matchReasons?.slice(0, 2).join(" - ") || "match rilevante dal CV"}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-black/65">La preview apparira dopo l&apos;analisi del CV e della ricerca.</p>
-                  )}
+              <Panel title="Prossimo passo" subtitle="La card iniziale ora guida il flusso invece di mostrare annunci grezzi">
+                <div className="space-y-4">
+                  <div className="rounded-[22px] border border-[#d7c1ae] bg-[#fbf7f3] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8c4b1f]">Cosa fare adesso</p>
+                    <p className="mt-3 text-sm leading-6 text-black/75">{nextActionText}</p>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">CV</p>
+                      <p className="mt-2 text-lg font-semibold text-black">{cvFile ? "Caricato" : "Assente"}</p>
+                      <p className="mt-2 text-xs leading-5 text-black/60">
+                        {cvFile ? cvFile.name : "Serve un PDF per sbloccare il profilo estratto."}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Profilo</p>
+                      <p className="mt-2 text-lg font-semibold text-black">{cvProfile ? "Estratto" : "In attesa"}</p>
+                      <p className="mt-2 text-xs leading-5 text-black/60">
+                        {cvProfile ? formatList(cvProfile.titles, "Ruoli non rilevati", 2) : "Dopo l'analisi vedrai ruoli, skill ed esperienza."}
+                      </p>
+                    </div>
+
+                    <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Rilancio</p>
+                      <p className="mt-2 text-lg font-semibold text-black">
+                        {selectedSuggestedRoles.length > 0 ? `${selectedSuggestedRoles.length} selezionati` : "Da affinare"}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-black/60">
+                        {suggestedRoles.length > 0
+                          ? formatList(selectedSuggestedRoles.length > 0 ? selectedSuggestedRoles : suggestedRoles, "Nessun ruolo", 3)
+                          : "I ruoli affini compariranno qui dopo l'analisi del CV."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {analysisReady && previewJobs.length > 0 ? (
+                    <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Prime evidenze</p>
+                      <p className="mt-3 text-sm leading-6 text-black/75">
+                        {`Il ranking corrente ha gia trovato ${previewJobs.length} risultati forti. Il primo match e ${titleCase(
+                          previewJobs[0]?.title ?? ""
+                        )} presso ${previewJobs[0]?.company ?? "fonte disponibile"}.`}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </Panel>
 
               <Panel title="Keyword CV" subtitle="Segnali lessicali piu frequenti estratti dal profilo">
-                <div className="flex flex-wrap gap-2">
-                  {cvKeywords.length > 0 ? (
-                    cvKeywords.map((keyword) => (
-                      <span key={keyword} className="rounded-full border border-black/10 px-3 py-1 text-xs">
-                        {keyword}
-                      </span>
-                    ))
+                <div className="space-y-4">
+                  <p className="text-sm leading-6 text-black/65">
+                    Queste keyword vengono estratte dall&apos;agent e usate come segnali operativi per cercare e ordinare posizioni
+                    pubbliche e private, insieme al contesto completo del CV.
+                  </p>
+
+                  {cvKeywords.length > 0 || cvProfile ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {cvKeywords.length > 0 ? (
+                          cvKeywords.map((keyword, index) => (
+                            <span
+                              key={keyword}
+                              className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${keywordToneClass(index)}`}
+                            >
+                              {keyword}
+                            </span>
+                          ))
+                        ) : (
+                          <EmptyPill text="Keyword testuali non ancora disponibili." />
+                        )}
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
+                          <p className="mt-3 text-sm leading-6 text-black/70">
+                            {cvProfile
+                              ? formatList(
+                                  [...cvProfile.titles, ...suggestedRoles],
+                                  "I ruoli estratti compariranno qui dopo l'analisi",
+                                  6
+                                )
+                              : "I ruoli estratti compariranno qui dopo l'analisi."}
+                          </p>
+                        </div>
+
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
+                          <p className="mt-3 text-sm leading-6 text-black/70">
+                            {cvProfile
+                              ? `${formatList(cvProfile.skills, "Skill in attesa", 5)}. Esperienza: ${formatList(
+                                  cvProfile.experienceAreas,
+                                  "non classificata",
+                                  3
+                                )}.`
+                              : "Skill ed esperienza del CV saranno usate per raffinare il matching oltre alle keyword."}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Come viene usato</p>
+                        <p className="mt-3 text-sm leading-6 text-black/75">
+                          Le keyword aiutano soprattutto su bandi e avvisi pubblici, mentre per il privato vengono combinate con
+                          titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                        </p>
+                      </div>
+                    </>
                   ) : (
-                    <EmptyPill text="Le keyword compariranno dopo l'analisi del CV." />
+                    <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                      <p className="text-sm leading-6 text-black/65">
+                        Dopo l&apos;analisi del CV qui vedrai keyword, ruoli affini e segnali di contesto che il motore usera per
+                        cercare offerte pubbliche e private con un matching piu preciso.
+                      </p>
+                    </div>
                   )}
                 </div>
               </Panel>

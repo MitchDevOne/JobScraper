@@ -70,6 +70,23 @@ const torinoMetroCommunes = new Set([
   "giaveno"
 ]);
 
+const suggestedRoleFamilies: Record<string, string[]> = {
+  "frontend developer": ["full stack developer", "software engineer", "technical specialist"],
+  "backend developer": ["full stack developer", "software engineer", "data engineer"],
+  "full stack developer": ["frontend developer", "backend developer", "software engineer"],
+  "software engineer": ["full stack developer", "backend developer", "cloud engineer"],
+  "data analyst": ["business analyst", "data engineer", "project management officer"],
+  "data engineer": ["data analyst", "backend developer", "cloud engineer"],
+  "business analyst": ["project manager", "project management officer", "data analyst"],
+  "project manager": ["project management officer", "business analyst", "product manager"],
+  "project management officer": ["project manager", "business analyst", "product manager"],
+  "product manager": ["project manager", "business analyst"],
+  "cloud engineer": ["devops engineer", "software engineer", "backend developer"],
+  "devops engineer": ["cloud engineer", "backend developer", "software engineer"],
+  "program analyst": ["business analyst", "backend developer", "technical specialist"],
+  "technical specialist": ["software engineer", "system architect", "solution designer"]
+};
+
 function escapeRegex(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -329,6 +346,30 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
 
   for (const title of cvProfile.titles) {
     candidateRoles.push(title);
+
+    for (const relatedRole of suggestedRoleFamilies[normalizeRoleLabel(title)] ?? []) {
+      candidateRoles.push(relatedRole);
+    }
+  }
+
+  if (cvProfile.skills.includes("react")) {
+    candidateRoles.push("frontend developer", "full stack developer");
+  }
+
+  if (cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))) {
+    candidateRoles.push("backend developer", "software engineer");
+  }
+
+  if (cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis"].includes(skill))) {
+    candidateRoles.push("data analyst", "business analyst");
+  }
+
+  if (cvProfile.skills.some((skill) => ["aws", "azure", "docker", "cloud"].includes(skill))) {
+    candidateRoles.push("cloud engineer", "devops engineer");
+  }
+
+  if (cvProfile.experienceAreas.includes("project management")) {
+    candidateRoles.push("project manager", "project management officer");
   }
 
   for (const job of jobs) {
@@ -343,7 +384,15 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
     }
   }
 
-  return aggregateRoleLabels(candidateRoles.filter((role) => !explicitTitles.has(normalizeRoleLabel(role))), 8);
+  const relatedRoles = aggregateRoleLabels(candidateRoles, 12).filter(
+    (role) => !explicitTitles.has(normalizeRoleLabel(role))
+  );
+
+  if (relatedRoles.length > 0) {
+    return relatedRoles.slice(0, 8);
+  }
+
+  return [...explicitTitles].slice(0, 6);
 }
 
 function dedupeJobs(jobs: Job[]) {
