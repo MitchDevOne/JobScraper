@@ -363,9 +363,9 @@ export function JobDashboard() {
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedSuggestedRoles.length > 0
-      ? "Rilancia la ricerca con i ruoli suggeriti selezionati"
+      ? "Rilancia la ricerca con le figure suggerite selezionate"
       : suggestedRoles.length > 0
-        ? "Rilancia la ricerca con tutti i ruoli suggeriti"
+        ? "Rilancia la ricerca con tutte le figure suggerite"
         : "Rianalizza CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
@@ -775,7 +775,7 @@ export function JobDashboard() {
             </button>
             {analysisReady && suggestedRoles.length > 0 ? (
               <p className="md:col-span-12 xl:col-span-6 text-sm leading-6 text-black/60">
-                Seleziona alcuni ruoli suggeriti per un rilancio piu mirato, oppure lascia invariata la selezione per usare l&apos;intero set suggerito.
+                Dopo la prima analisi puoi selezionare alcune figure suggerite per un rilancio piu mirato, oppure non selezionare nulla e usare automaticamente l&apos;intero set suggerito.
               </p>
             ) : null}
           </form>
@@ -860,8 +860,8 @@ export function JobDashboard() {
                               </div>
                               <p className="mt-3 text-sm leading-6 text-black/60">
                                 {selectedSuggestedRoles.length > 0
-                                  ? `Ruoli suggeriti selezionati per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                                  : "Seleziona alcuni ruoli suggeriti per restringere la ricerca, oppure rilancia con l'intero set proposto."}
+                                  ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                                  : "Seleziona alcune figure suggerite per restringere la ricerca, oppure rilancia con l'applicazione automatica dell'intero set proposto."}
                               </p>
                             </>
                           ) : (
