@@ -101,9 +101,9 @@ function buildCvProfileSummary(profile: CvProfile | null) {
 
 function keywordToneClass(index: number) {
   const tones = [
-    "bg-[#eef5f1] text-[#155b4a] border-[#cfe2d9]",
-    "bg-[#f7ede5] text-[#8c4b1f] border-[#e7cfbb]",
-    "bg-white text-black/75 border-black/10"
+    "bg-[#eef2ff] text-[#4338ca] border-[#c7d2fe]",
+    "bg-[#f3e8ff] text-[#6d28d9] border-[#ddd6fe]",
+    "bg-white text-[#312e81] border-[#dbe4ff]"
   ];
 
   return tones[index % tones.length];
@@ -111,8 +111,8 @@ function keywordToneClass(index: number) {
 
 function sectorBadgeClass(sector: SectorType) {
   return sector === "pubblico"
-    ? "bg-[#d6efe7] text-[#155b4a]"
-    : "bg-[#f4dfce] text-[#8c4b1f]";
+    ? "bg-[#e0e7ff] text-[#4338ca]"
+    : "bg-[#ede9fe] text-[#6d28d9]";
 }
 
 function workModeLabel(workMode: WorkMode) {
@@ -244,27 +244,27 @@ function StepCard({
     <div
       className={`rounded-[24px] border p-4 text-sm transition-colors ${
         active
-          ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a] shadow-card"
+          ? "border-[#6366f1] bg-[linear-gradient(135deg,rgba(224,231,255,0.95),rgba(243,232,255,0.92))] text-[#312e81] shadow-card"
           : done
-            ? "border-[#d7c1ae] bg-[#f7ede5] text-[#8c4b1f]"
-            : "border-black/10 bg-white/70 text-black/60"
+            ? "border-[#c7d2fe] bg-[#eef2ff] text-[#4338ca]"
+            : "border-[#dbe4ff] bg-white/75 text-black/60"
       }`}
     >
       <div className="flex items-center gap-3">
         <span
           className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-xs font-semibold uppercase tracking-[0.18em] ${
             active
-              ? "border-[#155b4a]/30 bg-white/60 text-[#155b4a]"
+              ? "border-[#6366f1]/30 bg-white/70 text-[#4338ca]"
               : done
-                ? "border-[#8c4b1f]/20 bg-white/60 text-[#8c4b1f]"
-                : "border-black/10 bg-white/80 text-black/45"
+                ? "border-[#818cf8]/25 bg-white/70 text-[#4f46e5]"
+                : "border-[#dbe4ff] bg-white/80 text-black/45"
           }`}
         >
           {step}
         </span>
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
-          <p className={`text-sm leading-6 ${active ? "text-[#155b4a]/80" : done ? "text-[#8c4b1f]/80" : "text-black/50"}`}>
+          <p className={`text-sm leading-6 ${active ? "text-[#4338ca]/80" : done ? "text-[#4f46e5]/80" : "text-black/50"}`}>
             {description}
           </p>
         </div>
@@ -291,7 +291,7 @@ function Panel({
   return (
     <section
       className={`rounded-[28px] border p-5 ${
-        dark ? "border-black/5 bg-[#17312b] text-white shadow-card" : "border-black/10 bg-white/78 shadow-card"
+        dark ? "border-[#312e81]/20 bg-[linear-gradient(180deg,#172554,#1e1b4b)] text-white shadow-card" : "border-[#dbe4ff] bg-[rgba(255,255,255,0.86)] shadow-card"
       }`}
     >
       <div className="mb-4">
@@ -318,9 +318,9 @@ function InfoCard({
 }) {
   const toneClass =
     tone === "warm"
-      ? "bg-[#f7ede5]"
+      ? "bg-[#f3e8ff]"
       : tone === "cool"
-        ? "bg-[#e7f4ef]"
+        ? "bg-[#eef2ff]"
         : "bg-white/70";
 
   return (
@@ -586,7 +586,7 @@ export function JobDashboard() {
       <article
         key={job.id}
         className={`flex min-h-0 h-[440px] flex-col overflow-hidden rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
-          featured ? "ring-1 ring-[#d7c1ae] xl:h-[460px]" : ""
+          featured ? "ring-1 ring-[#818cf8] xl:h-[460px]" : ""
         }`}
       >
         <div className="flex items-start justify-between gap-4">
@@ -601,14 +601,14 @@ export function JobDashboard() {
           </div>
           <div className="shrink-0 space-y-2 text-right">
             {typeof job.relevanceScore === "number" ? (
-              <span className="block rounded-full bg-[#17312b] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
+              <span className="block rounded-full bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-white">
                 Score {job.relevanceScore}
               </span>
             ) : null}
-            <span className="block rounded-full bg-[#f3ebe3] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/70">
+            <span className="block rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#312e81]">
               Pubblicato {formatDate(job.postedAt)}
             </span>
-            <span className="block rounded-full bg-[#ece7df] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-black/60">
+            <span className="block rounded-full bg-[#f5f3ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#4c1d95]">
               {job.expiresAt ? `Scade ${formatDate(job.expiresAt)}` : "Scadenza non indicata"}
             </span>
           </div>
@@ -619,13 +619,13 @@ export function JobDashboard() {
             <p className="text-sm leading-6 text-black/70">{job.summary}</p>
 
             {job.matchReasons && job.matchReasons.length > 0 ? (
-              <div className="rounded-[22px] bg-[#eef5f1] p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Perche lo vedi</p>
+              <div className="rounded-[22px] bg-[#eef2ff] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Perche lo vedi</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {job.matchReasons.slice(0, 4).map((reason) => (
                     <span
                       key={reason}
-                      className="rounded-full border border-[#c6e3d8] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#155b4a]"
+                      className="rounded-full border border-[#c7d2fe] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#4338ca]"
                     >
                       {reason}
                     </span>
@@ -643,14 +643,14 @@ export function JobDashboard() {
             </div>
 
             {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
-              <div className="rounded-2xl bg-[#f7ede5] p-3 text-xs text-black/65">
+              <div className="rounded-2xl bg-[#eef2ff] p-3 text-xs text-[#312e81]">
                 <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
                 <p className="mt-2 leading-5">{job.requirementHighlights[0]}</p>
               </div>
             ) : null}
 
             {job.sector === "privato" && job.privateFitStatus === "partial" ? (
-              <div className="rounded-2xl bg-[#fff5ec] p-3 text-xs text-[#8c4b1f]">
+              <div className="rounded-2xl bg-[#f5f3ff] p-3 text-xs text-[#6d28d9]">
                 <p className="font-semibold uppercase tracking-[0.12em]">Allineamento parziale</p>
                 <p className="mt-2 leading-5">
                   La posizione condivide alcuni segnali con il CV, ma non combacia del tutto con esperienza e titoli principali.
@@ -680,7 +680,7 @@ export function JobDashboard() {
               href={job.originalUrl}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full bg-[#17312b] px-4 py-2 font-semibold text-white"
+              className="rounded-full bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-4 py-2 font-semibold text-white"
             >
               Apri offerta
             </a>
@@ -709,7 +709,7 @@ export function JobDashboard() {
 
   return (
     <section className="relative mx-auto max-w-7xl px-6 pb-16">
-      <div className="relative overflow-hidden rounded-[36px] border border-black/10 bg-[rgba(255,250,245,0.82)] p-6 shadow-card md:p-8">
+      <div className="relative overflow-hidden rounded-[36px] border border-[#dbe4ff] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(238,242,255,0.88))] p-6 shadow-card md:p-8">
         <div className="hero-grid absolute inset-0 opacity-70" />
         <div className="relative space-y-8">
           <div className="space-y-5">
@@ -800,7 +800,7 @@ export function JobDashboard() {
                   <p className="text-base font-semibold">{SEARCH_LOCATION}</p>
                   <p className="text-sm text-black/55">Perimetro geografico ristretto e coerente.</p>
                 </div>
-                <span className="rounded-full bg-[#eef5f1] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#155b4a]">
+                <span className="rounded-full bg-[#eef2ff] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#4338ca]">
                   Torino only
                 </span>
               </div>
@@ -839,7 +839,7 @@ export function JobDashboard() {
                     void runCvAnalysis(file);
                   }
                 }}
-                className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[#17312b] file:px-4 file:py-2 file:font-semibold file:text-white"
+                className="w-full text-sm text-black/70 file:mr-4 file:rounded-full file:border-0 file:bg-[linear-gradient(135deg,#4338ca,#7c3aed)] file:px-4 file:py-2 file:font-semibold file:text-white"
               />
               <p className="mt-3 text-sm text-black/60">
                 Il CV viene analizzato nella sessione corrente appena lo carichi e va ricaricato a ogni nuova analisi.
@@ -849,7 +849,7 @@ export function JobDashboard() {
             <button
               type="submit"
               disabled={loading || !cvFile}
-              className="rounded-[24px] bg-[#b4622a] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-6 xl:col-span-3"
+              className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-6 xl:col-span-3"
             >
               {loading ? "Analizzo..." : "Rianalizza CV"}
             </button>
@@ -865,7 +865,7 @@ export function JobDashboard() {
           </form>
 
           {errorMessage ? (
-            <div className="rounded-[24px] border border-[#e7b89a] bg-[#fff3ea] px-5 py-4 text-sm text-[#8c4b1f]" role="alert">
+            <div className="rounded-[24px] border border-[#c7d2fe] bg-[#eef2ff] px-5 py-4 text-sm text-[#4338ca]" role="alert">
               <p className="font-semibold uppercase tracking-[0.14em]">Errore ricerca</p>
               <p className="mt-2">{errorMessage}</p>
             </div>
@@ -876,8 +876,8 @@ export function JobDashboard() {
               <Panel title="Profilo CV estratto" subtitle="Profilo, ruoli suggeriti e keyword operative nello stesso flusso">
                 {cvProfile ? (
                   <div className="space-y-5 text-sm text-black/75">
-                    <div className="rounded-[22px] border border-[#d7c1ae] bg-[#f7ede5] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8c4b1f]">Sintesi profilo</p>
+                    <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f5f3ff] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Sintesi profilo</p>
                       <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
                     </div>
 
@@ -887,7 +887,7 @@ export function JobDashboard() {
                         <div className="mt-2 flex flex-wrap gap-2">
                           {cvProfile.titles.length > 0 ? (
                             cvProfile.titles.map((title) => (
-                              <span key={title} className="rounded-full border border-black/10 bg-[#eef5f1] px-3 py-1 text-xs">
+                              <span key={title} className="rounded-full border border-[#dbe4ff] bg-[#eef2ff] px-3 py-1 text-xs text-[#312e81]">
                                 {titleCase(title)}
                               </span>
                             ))
@@ -933,8 +933,8 @@ export function JobDashboard() {
                                   onClick={() => toggleSuggestedRole(role)}
                                   className={`rounded-full border px-3 py-1 text-xs transition-colors ${
                                     selectedSuggestedRoles.includes(role)
-                                      ? "border-[#155b4a] bg-[#d6efe7] text-[#155b4a]"
-                                      : "border-black/10 bg-white hover:bg-[#f3ebe3]"
+                                      ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
+                                      : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
                                   }`}
                                 >
                                   {titleCase(role)}
@@ -1001,8 +1001,8 @@ export function JobDashboard() {
                       </div>
                     </div>
 
-                    <div className="rounded-[22px] border border-[#d6e6de] bg-[#eef5f1] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Come viene usato</p>
+                    <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
                       <p className="mt-3 text-sm leading-6 text-black/75">
                         Le keyword aiutano soprattutto su bandi e avvisi pubblici, mentre per il privato vengono combinate con
                         titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
@@ -1016,13 +1016,13 @@ export function JobDashboard() {
                       competenze chiave, esperienza, ruoli suggeriti e keyword operative.
                     </p>
                     <div className="grid gap-3 md:grid-cols-2">
-                      <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti</p>
                         <p className="mt-3 text-sm leading-6 text-black/65">
                           Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
                         </p>
                       </div>
-                      <div className="rounded-[22px] border border-black/10 bg-[#fbf7f3] p-4">
+                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword CV</p>
                         <p className="mt-3 text-sm leading-6 text-black/65">
                           Dopo la lettura del CV qui vedrai keyword operative e segnali di contesto usati dal motore.
@@ -1049,7 +1049,7 @@ export function JobDashboard() {
                   <div className="flex flex-wrap gap-2">
                     {consultedSources.length > 0 ? (
                       consultedSources.map((source) => (
-                        <span key={source} className="rounded-full border border-black/10 bg-[#f7ede5] px-3 py-1 text-xs">
+                        <span key={source} className="rounded-full border border-[#ddd6fe] bg-[#f5f3ff] px-3 py-1 text-xs text-[#4c1d95]">
                           {source}
                         </span>
                       ))
@@ -1090,7 +1090,7 @@ export function JobDashboard() {
                             </div>
                             <span
                               className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                metric.success ? "bg-[#d6efe7] text-[#155b4a]" : "bg-[#f4dfce] text-[#8c4b1f]"
+                                metric.success ? "bg-[#e0e7ff] text-[#4338ca]" : "bg-[#f3e8ff] text-[#6d28d9]"
                               }`}
                             >
                               {metric.success ? "ok" : "errore"}
@@ -1109,7 +1109,7 @@ export function JobDashboard() {
                             </p>
                           ) : null}
 
-                          {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ffd4b5]">{metric.error}</p> : null}
+                          {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ddd6fe]">{metric.error}</p> : null}
                         </div>
                       ))
                     ) : (
@@ -1138,7 +1138,7 @@ export function JobDashboard() {
           <>
             {featuredJobs.length > 0 ? (
               <section className="space-y-4">
-                <div className="rounded-[28px] border border-black/10 bg-[#17312b] p-5 text-white shadow-card">
+                <div className="rounded-[28px] border border-[#312e81]/20 bg-[linear-gradient(135deg,#312e81,#4f46e5)] p-5 text-white shadow-card">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Top match</p>
                   <h2 className="mt-2 font-[var(--font-display)] text-3xl font-bold">Le prime posizioni da aprire adesso</h2>
                   <p className="mt-2 text-sm text-white/70">
@@ -1148,14 +1148,14 @@ export function JobDashboard() {
                 <div className="grid gap-4 xl:grid-cols-3">{featuredJobs.map((job) => renderJobCard(job, true))}</div>
               </section>
             ) : null}
-            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef5f1]")}
+            {renderJobSection("Posizioni Pubbliche", "Sezione PA", publicJobs, "bg-[#eef2ff]")}
             {renderJobSection(
               "PA Potenzialmente Compatibili",
               "Verifica titoli di studio e requisiti specifici",
               publicPotentialJobs,
-              "bg-[#f7ede5]"
+              "bg-[#f5f3ff]"
             )}
-            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#fff6ef]")}
+            {renderJobSection("Posizioni Private", "Sezione aziende", privateJobs, "bg-[#f8f7ff]")}
           </>
         ) : (
           <div className="col-span-full rounded-[28px] border border-dashed border-black/20 bg-white/65 p-8 text-center">
