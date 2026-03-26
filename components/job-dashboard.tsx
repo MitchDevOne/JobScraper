@@ -58,14 +58,6 @@ function formatDuration(input: number) {
   return `${(input / 1000).toFixed(1)} s`;
 }
 
-function truncateText(input: string, maxLength = 170) {
-  if (input.length <= maxLength) {
-    return input;
-  }
-
-  return `${input.slice(0, maxLength).trimEnd()}...`;
-}
-
 function titleCase(input: string) {
   return input.replace(/\b\w/g, (char) => char.toUpperCase());
 }
@@ -583,8 +575,8 @@ export function JobDashboard() {
     return (
       <article
         key={job.id}
-        className={`rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
-          featured ? "ring-1 ring-[#d7c1ae]" : ""
+        className={`flex h-[440px] flex-col rounded-[28px] border border-black/10 bg-white/82 p-6 shadow-card transition-transform duration-200 hover:-translate-y-1 ${
+          featured ? "ring-1 ring-[#d7c1ae] xl:h-[460px]" : ""
         }`}
       >
         <div className="flex items-start justify-between gap-4">
@@ -612,49 +604,53 @@ export function JobDashboard() {
           </div>
         </div>
 
-        <p className="mt-5 text-sm leading-6 text-black/70">{truncateText(job.summary, featured ? 210 : 170)}</p>
+        <div className="mt-5 flex-1 overflow-hidden">
+          <div className="h-full space-y-4 overflow-y-auto pr-2">
+            <p className="text-sm leading-6 text-black/70">{job.summary}</p>
 
-        {job.matchReasons && job.matchReasons.length > 0 ? (
-          <div className="mt-5 rounded-[22px] bg-[#eef5f1] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Perche lo vedi</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {job.matchReasons.slice(0, 4).map((reason) => (
-                <span
-                  key={reason}
-                  className="rounded-full border border-[#c6e3d8] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#155b4a]"
-                >
-                  {reason}
+            {job.matchReasons && job.matchReasons.length > 0 ? (
+              <div className="rounded-[22px] bg-[#eef5f1] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#155b4a]">Perche lo vedi</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {job.matchReasons.slice(0, 4).map((reason) => (
+                    <span
+                      key={reason}
+                      className="rounded-full border border-[#c6e3d8] bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#155b4a]"
+                    >
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex flex-wrap gap-2">
+              {job.tags.slice(0, 6).map((tag) => (
+                <span key={tag} className="rounded-full border border-black/10 px-3 py-1 text-xs text-black/75">
+                  {tag}
                 </span>
               ))}
             </div>
-          </div>
-        ) : null}
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          {job.tags.slice(0, 6).map((tag) => (
-            <span key={tag} className="rounded-full border border-black/10 px-3 py-1 text-xs text-black/75">
-              {tag}
-            </span>
-          ))}
+            {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
+              <div className="rounded-2xl bg-[#f7ede5] p-3 text-xs text-black/65">
+                <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
+                <p className="mt-2 leading-5">{job.requirementHighlights[0]}</p>
+              </div>
+            ) : null}
+
+            {job.sector === "privato" && job.privateFitStatus === "partial" ? (
+              <div className="rounded-2xl bg-[#fff5ec] p-3 text-xs text-[#8c4b1f]">
+                <p className="font-semibold uppercase tracking-[0.12em]">Allineamento parziale</p>
+                <p className="mt-2 leading-5">
+                  La posizione condivide alcuni segnali con il CV, ma non combacia del tutto con esperienza e titoli principali.
+                </p>
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        {job.sector === "pubblico" && job.requirementHighlights && job.requirementHighlights.length > 0 ? (
-          <div className="mt-4 rounded-2xl bg-[#f7ede5] p-3 text-xs text-black/65">
-            <p className="font-semibold uppercase tracking-[0.12em] text-black/45">Requisiti analizzati</p>
-            <p className="mt-2 leading-5">{truncateText(job.requirementHighlights[0], 180)}</p>
-          </div>
-        ) : null}
-
-        {job.sector === "privato" && job.privateFitStatus === "partial" ? (
-          <div className="mt-4 rounded-2xl bg-[#fff5ec] p-3 text-xs text-[#8c4b1f]">
-            <p className="font-semibold uppercase tracking-[0.12em]">Allineamento parziale</p>
-            <p className="mt-2 leading-5">
-              La posizione condivide alcuni segnali con il CV, ma non combacia del tutto con esperienza e titoli principali.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
+        <div className="mt-5 flex items-center justify-between gap-4 border-t border-black/10 pt-5 text-sm text-black/60">
           <div>
             <p>{job.location}</p>
             <p className="mt-1 uppercase tracking-[0.14em]">{workModeLabel(job.workMode)}</p>
@@ -734,7 +730,11 @@ export function JobDashboard() {
                     hint="Sorgenti realmente interrogate per questi filtri."
                     tone="cool"
                   />
-                  <InfoCard label="Ruoli target" value={activeRoleTargets.length} hint="Titoli attivi usati nel matching." />
+                  <InfoCard
+                    label="Target di ricerca"
+                    value={activeRoleTargets.length}
+                    hint="Ruoli attivi usati per filtrare e ordinare i risultati."
+                  />
                   <InfoCard
                     label="Ultimo refresh"
                     value={lastUpdatedAt ? formatTimestamp(lastUpdatedAt) : "Pronto"}
