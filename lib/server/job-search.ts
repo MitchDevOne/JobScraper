@@ -641,7 +641,9 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   );
   const liveJobs = liveResults.flatMap((result) => result.jobs);
   const sourceFetchMetrics = liveResults.map((result) => result.metric);
-  const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...privateJobsSeed]), cvProfile);
+  const hasLivePrivateJobs = liveJobs.some((job) => job.sector === "privato");
+  const fallbackSeedJobs = privateJobsSeed.filter((job) => job.sector !== "privato" || !hasLivePrivateJobs);
+  const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...fallbackSeedJobs]), cvProfile);
   const cvTokens = buildCvSemanticTokens(cvProfile);
 
   const filteredJobs = jobs

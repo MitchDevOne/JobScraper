@@ -20,5 +20,5 @@ export const sourceAdapters: SourceAdapter[] = sourceRegistry.map((source) => ({
         ? "api"
         : "html-parser",
   enabled: source.enabled,
-  notes: `${source.capabilities.originType} / ${source.capabilities.qualityTier}`
+  notes: `${source.capabilities.originType} / ${source.capabilities.qualityTier} / ${source.governance} / ${source.domain}`
 }));

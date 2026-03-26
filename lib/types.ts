@@ -2,6 +2,26 @@ export type SectorType = "pubblico" | "privato";
 export type WorkMode = "on-site" | "hybrid" | "remote";
 export type JobStatus = "nuova" | "vista" | "salvata" | "scartata" | "applicata";
 export type LocationScope = "city" | "metro";
+export type SourceGovernance = "public" | "private" | "hybrid";
+export type SourceDomain =
+  | "public-admin"
+  | "international-public"
+  | "foundation"
+  | "third-sector"
+  | "neighborhood-houses"
+  | "museum"
+  | "education-association"
+  | "education"
+  | "ngo"
+  | "incubator"
+  | "finance"
+  | "fintech"
+  | "insurance"
+  | "ict"
+  | "biotech"
+  | "automotive"
+  | "aerospace"
+  | "company-careers";
 export type SourceOriginType = "official" | "ats" | "aggregator" | "seed" | "partner-api" | "experimental";
 export type SourceRetrievalMode = "listing-page" | "public-api" | "partner-api" | "xml-feed" | "seed" | "manual-import";
 export type SourceAuthMode = "none" | "api-key" | "oauth" | "partner-only";

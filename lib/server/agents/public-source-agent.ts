@@ -25,6 +25,9 @@ export function shouldIncludePublicSource(sourceId: string, filters: JobFilters)
       return isTorinoArea(filters.location);
     case "regione-piemonte":
       return isTorinoArea(filters.location);
+    case "torino-eu-network":
+    case "torino-un-network":
+      return isTorinoArea(filters.location);
     default:
       return false;
   }

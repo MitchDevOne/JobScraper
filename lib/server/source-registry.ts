@@ -8,7 +8,8 @@ import { scrapeCsiPiemonteJobs } from "@/lib/server/scrapers/csi-piemonte";
 import { scrapeInpaJobs } from "@/lib/server/scrapers/inpa";
 import { scrapeRegionePiemonteJobs } from "@/lib/server/scrapers/regione-piemonte";
 import { scrapeGreenhouseJobs, scrapeLeverJobs, scrapeSmartRecruitersJobs } from "@/lib/server/scrapers/private-ats";
-import { CvProfile, Job, JobFilters, SourceCapabilities, SourceQuery } from "@/lib/types";
+import { scrapeTorinoPrivateCareerPages } from "@/lib/server/scrapers/torino-private-careers";
+import { CvProfile, Job, JobFilters, SourceCapabilities, SourceDomain, SourceGovernance, SourceQuery } from "@/lib/types";
 
 type SourceFetcher = (query: SourceQuery, filters: JobFilters) => Promise<Job[]>;
 
@@ -16,6 +17,8 @@ export type SourceRegistryEntry = {
   id: string;
   label: string;
   sector: "pubblico" | "privato";
+  governance: SourceGovernance;
+  domain: SourceDomain;
   enabled: boolean;
   adapterId: string;
   capabilities: SourceCapabilities;
@@ -156,6 +159,258 @@ const sourceCapabilitiesById: Record<string, SourceCapabilities> = {
     defaultPriority: 93,
     dedupeStrategy: "external-id"
   },
+  "torino-private-careers": {
+    originType: "experimental",
+    retrievalMode: "listing-page",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: true,
+    supportsIncrementalSync: false,
+    defaultPriority: 91,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-eu-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 65,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-un-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-city",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 66,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-foundations-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 62,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-third-sector-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 61,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-neighborhood-houses-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-city",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 62,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-museums-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-city",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 62,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-education-associations-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 62,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-education-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 63,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-ngo-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 60,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-incubators-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 63,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-finance-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 64,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-fintech-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 64,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-insurance-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 64,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-ict-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 66,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-biotech-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 63,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-automotive-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 65,
+    dedupeStrategy: "hybrid"
+  },
+  "torino-aerospace-network": {
+    originType: "seed",
+    retrievalMode: "seed",
+    authMode: "none",
+    coverage: "torino-metro",
+    qualityTier: "medium",
+    supportsKeywordSearch: true,
+    supportsLocationSearch: false,
+    supportsPagination: false,
+    supportsDetailEnrichment: false,
+    supportsIncrementalSync: false,
+    defaultPriority: 65,
+    dedupeStrategy: "hybrid"
+  },
   "company-careers-seed": {
     originType: "seed",
     retrievalMode: "seed",
@@ -206,6 +461,117 @@ function expandEducationQueryTerms(levels: string[]) {
   );
 }
 
+function buildTorinoContextTerms(filters: JobFilters) {
+  const location = normalize(filters.location ?? "");
+  const scope = filters.locationScope ?? "metro";
+  const context = ["torino", "piemonte"];
+
+  if (!location || location.includes("torino") || location.includes("piemonte")) {
+    context.push("citta metropolitana di torino");
+  }
+
+  if (scope === "city") {
+    context.push("torino citta");
+  }
+
+  return uniqueTerms(context);
+}
+
+const sourceDomainSemanticTerms: Record<string, string[]> = {
+  "public-admin": ["ente pubblico", "concorso", "avviso", "selezione", "amministrazione pubblica"],
+  "international-public": ["unione europea", "nazioni unite", "policy", "grant", "international affairs", "public policy"],
+  foundation: ["fondazione", "grant", "programmi", "social impact", "filantropia", "progettazione"],
+  "third-sector": ["terzo settore", "associazione", "cooperativa", "welfare", "community", "inclusione"],
+  "neighborhood-houses": ["case del quartiere", "community hub", "spazi civici", "quartiere", "cultura", "partecipazione", "animazione territoriale"],
+  museum: ["museo", "mostra", "curation", "public program", "didattica museale", "heritage", "patrimonio culturale"],
+  "education-association": ["educatori", "pedagogia", "doposcuola", "formazione civica", "facilitazione", "progettazione educativa"],
+  education: ["istruzione", "scuola", "academy", "formazione", "teaching", "docenza", "universita", "its"],
+  ngo: ["ong", "cooperazione internazionale", "human rights", "sviluppo", "advocacy", "progetti europei"],
+  incubator: ["startup", "innovation", "accelerator", "incubator", "venture", "entrepreneurship"],
+  finance: ["banking", "finance", "risk", "audit", "compliance", "operations", "insurance"],
+  fintech: ["fintech", "payments", "open banking", "digital banking", "fraud", "wallet", "embedded finance"],
+  insurance: ["insurance", "assicurazioni", "claims", "underwriting", "broker", "risk", "insurtech"],
+  ict: ["ict", "information technology", "software", "system integration", "cloud", "cybersecurity", "infrastructure", "digital services"],
+  biotech: ["biotech", "biotechnology", "life sciences", "medical devices", "medtech", "pharma", "clinical"],
+  automotive: ["automotive", "mobility", "vehicle", "powertrain", "aftermarket", "manufacturing", "supplier"],
+  aerospace: ["aerospace", "space", "satellite", "avionics", "mission", "propulsion", "earth observation"],
+  "company-careers": ["azienda", "career", "lavora con noi"]
+};
+
+function buildSourceContextTerms(sourceId: string, filters: JobFilters) {
+  const torinoTerms = buildTorinoContextTerms(filters);
+
+  switch (sourceId) {
+    case "inpa":
+    case "comune-torino":
+    case "citta-metropolitana-torino":
+    case "camera-commercio-torino":
+    case "regione-piemonte":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms["public-admin"]]);
+    case "torino-eu-network":
+    case "torino-un-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms["international-public"]]);
+    case "torino-foundations-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.foundation]);
+    case "torino-third-sector-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms["third-sector"]]);
+    case "torino-neighborhood-houses-network":
+      return uniqueTerms([
+        ...torinoTerms,
+        ...sourceDomainSemanticTerms["neighborhood-houses"],
+        ...sourceDomainSemanticTerms["third-sector"]
+      ]);
+    case "torino-museums-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.museum, ...sourceDomainSemanticTerms.foundation]);
+    case "torino-education-associations-network":
+      return uniqueTerms([
+        ...torinoTerms,
+        ...sourceDomainSemanticTerms["education-association"],
+        ...sourceDomainSemanticTerms["third-sector"]
+      ]);
+    case "torino-education-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.education]);
+    case "torino-ngo-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.ngo]);
+    case "torino-incubators-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.incubator]);
+    case "torino-finance-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.finance]);
+    case "torino-fintech-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.fintech, ...sourceDomainSemanticTerms.finance]);
+    case "torino-insurance-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.insurance, ...sourceDomainSemanticTerms.finance]);
+    case "torino-ict-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.ict]);
+    case "torino-biotech-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.biotech]);
+    case "torino-automotive-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.automotive]);
+    case "torino-aerospace-network":
+      return uniqueTerms([...torinoTerms, ...sourceDomainSemanticTerms.aerospace]);
+    case "torino-private-careers":
+      return uniqueTerms([
+        ...torinoTerms,
+        ...sourceDomainSemanticTerms.finance,
+        ...sourceDomainSemanticTerms.fintech,
+        ...sourceDomainSemanticTerms.insurance,
+        ...sourceDomainSemanticTerms.ict,
+        ...sourceDomainSemanticTerms.biotech,
+        ...sourceDomainSemanticTerms.automotive,
+        ...sourceDomainSemanticTerms.aerospace,
+        ...sourceDomainSemanticTerms.foundation,
+        ...sourceDomainSemanticTerms["third-sector"],
+        ...sourceDomainSemanticTerms["neighborhood-houses"],
+        ...sourceDomainSemanticTerms.museum,
+        ...sourceDomainSemanticTerms["education-association"],
+        ...sourceDomainSemanticTerms.education,
+        ...sourceDomainSemanticTerms.incubator
+      ]);
+    default:
+      return torinoTerms;
+  }
+}
+
 function buildBaseSourceQuery(filters: JobFilters, cvProfile?: CvProfile | null): SourceQuery {
   const semanticSkillTerms = uniqueTerms([
     ...(cvProfile?.skills ?? []),
@@ -246,6 +612,8 @@ function getSourceFetcher(sourceId: string): SourceFetcher | null {
       return async () => scrapeLeverJobs();
     case "smartrecruiters-private-boards":
       return async () => scrapeSmartRecruitersJobs();
+    case "torino-private-careers":
+      return async (query) => scrapeTorinoPrivateCareerPages(query);
     default:
       return null;
   }
@@ -266,6 +634,7 @@ function buildSourceQueryForEntry(
   cvProfile?: CvProfile | null
 ) {
   const baseQuery = buildBaseSourceQuery(filters, cvProfile);
+  const sourceContextTerms = buildSourceContextTerms(sourceId, filters);
 
   if (!getSourceEligibility(sourceId)(filters)) {
     return null;
@@ -274,7 +643,9 @@ function buildSourceQueryForEntry(
   return {
     ...baseQuery,
     roleKeywords: capabilities.supportsKeywordSearch ? baseQuery.roleKeywords : [],
-    skillKeywords: capabilities.supportsKeywordSearch ? baseQuery.skillKeywords : [],
+    skillKeywords: capabilities.supportsKeywordSearch
+      ? uniqueTerms([...baseQuery.skillKeywords, ...sourceContextTerms]).slice(0, 24)
+      : [],
     location: capabilities.supportsLocationSearch ? baseQuery.location : null,
     locationScope: capabilities.supportsLocationSearch ? baseQuery.locationScope : null,
     workMode: capabilities.supportsWorkModeFiltering ? baseQuery.workMode : null,
@@ -293,6 +664,8 @@ export const sourceRegistry: SourceRegistryEntry[] = sourceCatalog.map((source) 
     id: source.id,
     label: source.label,
     sector: source.sector,
+    governance: source.governance,
+    domain: source.domain,
     enabled: source.enabled,
     adapterId: source.id,
     capabilities,
