@@ -774,9 +774,30 @@ export function JobDashboard() {
               {reanalyzeLabel}
             </button>
             {analysisReady && suggestedRoles.length > 0 ? (
-              <p className="md:col-span-12 xl:col-span-6 text-sm leading-6 text-black/60">
-                Dopo la prima analisi puoi selezionare alcune figure suggerite per un rilancio piu mirato, oppure non selezionare nulla e usare automaticamente l&apos;intero set suggerito.
-              </p>
+              <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4 md:col-span-12 xl:col-span-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Figure suggerite selezionabili</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {suggestedRoles.map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => toggleSuggestedRole(role)}
+                      className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                        selectedSuggestedRoles.includes(role)
+                          ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
+                          : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
+                      }`}
+                    >
+                      {titleCase(role)}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm leading-6 text-black/60">
+                  {selectedSuggestedRoles.length > 0
+                    ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                    : "Dopo la prima analisi puoi selezionare alcune figure suggerite per un rilancio piu mirato, oppure non selezionare nulla e usare automaticamente l&apos;intero set suggerito."}
+                </p>
+              </div>
             ) : null}
           </form>
 
@@ -839,39 +860,6 @@ export function JobDashboard() {
 
                       <div className="grid gap-4 lg:grid-cols-2">
                         <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
-                          {suggestedRoles.length > 0 ? (
-                            <>
-                              <div className="mt-3 flex flex-wrap gap-2">
-                                {suggestedRoles.map((role) => (
-                                  <button
-                                    key={role}
-                                    type="button"
-                                    onClick={() => toggleSuggestedRole(role)}
-                                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                                      selectedSuggestedRoles.includes(role)
-                                        ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
-                                        : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
-                                    }`}
-                                  >
-                                    {titleCase(role)}
-                                  </button>
-                                ))}
-                              </div>
-                              <p className="mt-3 text-sm leading-6 text-black/60">
-                                {selectedSuggestedRoles.length > 0
-                                  ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                                  : "Seleziona alcune figure suggerite per restringere la ricerca, oppure rilancia con l'applicazione automatica dell'intero set proposto."}
-                              </p>
-                            </>
-                          ) : (
-                            <p className="mt-3 text-sm leading-6 text-black/65">
-                              Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
                           <p className="mt-3 text-sm leading-6 text-black/65">
                             Queste keyword vengono estratte dal profilo e usate dal backend come segnali operativi per cercare, filtrare e ordinare le posizioni.
@@ -892,9 +880,7 @@ export function JobDashboard() {
                             )}
                           </div>
                         </div>
-                      </div>
 
-                      <div className="grid gap-3 md:grid-cols-2">
                         <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
                           <p className="mt-3 text-sm leading-6 text-black/70">
@@ -905,7 +891,9 @@ export function JobDashboard() {
                             )}
                           </p>
                         </div>
+                      </div>
 
+                      <div className="grid gap-3 md:grid-cols-2">
                         <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
                           <p className="mt-3 text-sm leading-6 text-black/70">
