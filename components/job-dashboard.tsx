@@ -357,14 +357,10 @@ export function JobDashboard() {
     cvProfile &&
       activeRoleTargets.some((role) => cvProfile.titles.some((title) => normalizeRoleLabel(title) === normalizeRoleLabel(role)))
   );
-  const selectableRoleTargets = suggestedRoles.length > 0 ? suggestedRoles : cvProfile?.titles ?? [];
-  const roleSelectionLabel = suggestedRoles.length > 0 ? "Figure suggerite selezionabili" : "Ruoli estratti selezionabili";
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedRoleTargets.length > 0
-      ? suggestedRoles.length > 0
-        ? "Rilancia la ricerca con le figure suggerite selezionate"
-        : "Rilancia la ricerca con i ruoli estratti selezionati"
+      ? "Rilancia la ricerca con le figure suggerite selezionate"
       : suggestedRoles.length > 0
         ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
         : hasExtractedRoleTargets && !hasAppliedExtractedRoles
@@ -435,7 +431,7 @@ export function JobDashboard() {
       cvProfile && suggestedRoles.length > 0
         ? [...new Set([...(cvProfile.titles ?? []), ...(selectedRoleTargets.length > 0 ? selectedRoleTargets : suggestedRoles)])]
         : cvProfile?.titles?.length
-          ? [...new Set(selectedRoleTargets.length > 0 ? selectedRoleTargets : cvProfile.titles)]
+          ? [...new Set(cvProfile.titles)]
           : [];
     setAnalysisReady(false);
 
@@ -778,11 +774,11 @@ export function JobDashboard() {
               </p>
             </label>
 
-            {analysisReady && selectableRoleTargets.length > 0 ? (
+            {analysisReady && suggestedRoles.length > 0 ? (
               <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4 md:col-span-12 xl:col-span-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">{roleSelectionLabel}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Figure suggerite selezionabili</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {selectableRoleTargets.map((role) => (
+                  {suggestedRoles.map((role) => (
                     <button
                       key={role}
                       type="button"
@@ -799,10 +795,8 @@ export function JobDashboard() {
                 </div>
                 <p className="mt-3 text-sm leading-6 text-black/60">
                   {selectedRoleTargets.length > 0
-                    ? `${suggestedRoles.length > 0 ? "Figure suggerite" : "Ruoli estratti"} selezionati per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
-                    : suggestedRoles.length > 0
-                      ? "Puoi selezionare alcune figure suggerite per restringere il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."
-                      : "Puoi selezionare alcuni ruoli estratti dal CV per il prossimo rilancio, oppure non selezionare nulla e usare automaticamente tutti i ruoli estratti."}
+                    ? `Figure suggerite selezionate per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
+                    : "Puoi selezionare alcune figure suggerite per ampliare o restringere semanticamente il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutti i suggerimenti alla ricerca."}
                 </p>
               </div>
             ) : null}
@@ -822,7 +816,7 @@ export function JobDashboard() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Sequenza di affinamento</p>
                 <p className="mt-3 leading-6">
                   Alla prima analisi il sistema usa solo i ruoli congrui estratti dal CV. Al prossimo rilancio questi ruoli
-                  vengono applicati alla ricerca e il modello elabora le figure suggerite da usare eventualmente nel passaggio successivo.
+                  vengono applicati automaticamente alla ricerca e il modello elabora le figure suggerite da selezionare eventualmente nel passaggio successivo.
                 </p>
               </div>
             ) : null}
