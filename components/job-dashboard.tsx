@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, startTransition, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, startTransition, useCallback, useMemo, useState } from "react";
 import { CvProfile, Job, LocationScope, SearchResponse, SectorType, SourceFetchMetrics, WorkMode } from "@/lib/types";
 
 const SEARCH_LOCATION = "Torino";
@@ -336,7 +336,7 @@ export function JobDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [publicPotentialJobs, setPublicPotentialJobs] = useState<Job[]>([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [query, setQuery] = useState("");
   const [sector, setSector] = useState<SectorType | "all">("all");
@@ -361,13 +361,6 @@ export function JobDashboard() {
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
-  const targetedSearchLabel = loading
-    ? "Attendi..."
-    : selectedSuggestedRoles.length > 0
-      ? "Applica ruoli selezionati + keyword CV"
-      : suggestedRoles.length > 0
-        ? "Applica tutti i suggeriti + keyword CV"
-        : "Applica ruoli suggeriti + keyword CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
@@ -427,65 +420,16 @@ export function JobDashboard() {
     }
   }, [cvFile, locationScope, query, sector, workMode]);
 
-  useEffect(() => {
-    let active = true;
-
-    async function loadInitialJobs() {
-      try {
-        const payload = await requestJobs(false, []);
-
-        if (!active) {
-          return;
-        }
-
-        applyResponseState(payload, {
-          setJobs,
-          setPublicPotentialJobs,
-          setTotal,
-          setCvKeywords,
-          setCvProfile,
-          setLastUpdatedAt,
-          setConsultedSources,
-          setPreviewJobs,
-          setSuggestedRoles,
-          setActiveRoleTargets,
-          setSourceFetchMetrics
-        });
-      } catch {
-        if (!active) {
-          return;
-        }
-
-        resetSearchState({
-          setJobs,
-          setPublicPotentialJobs,
-          setTotal,
-          setCvKeywords,
-          setCvProfile,
-          setLastUpdatedAt,
-          setConsultedSources,
-          setPreviewJobs,
-          setSuggestedRoles,
-          setActiveRoleTargets,
-          setSourceFetchMetrics
-        });
-      }
-    }
-
-    void loadInitialJobs();
-
-    return () => {
-      active = false;
-    };
-  }, [requestJobs]);
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const roleTargets =
+      cvProfile && suggestedRoles.length > 0
+        ? [...new Set([...(cvProfile.titles ?? []), ...(selectedSuggestedRoles.length > 0 ? selectedSuggestedRoles : suggestedRoles)])]
+        : [];
     setAnalysisReady(false);
-    setSelectedSuggestedRoles([]);
 
     try {
-      const payload = await requestJobs(true, []);
+      const payload = await requestJobs(true, roleTargets);
       applyResponseState(payload, {
         setJobs,
         setPublicPotentialJobs,
@@ -514,7 +458,6 @@ export function JobDashboard() {
         setActiveRoleTargets,
         setSourceFetchMetrics
       });
-      setSelectedSuggestedRoles([]);
       setAnalysisReady(false);
     }
   }
@@ -562,30 +505,6 @@ export function JobDashboard() {
     setSelectedSuggestedRoles((current) =>
       current.includes(role) ? current.filter((item) => item !== role) : [...current, role]
     );
-  }
-
-  async function handleTargetedSearch() {
-    const roleTargets = [...new Set([...(cvProfile?.titles ?? []), ...selectedSuggestedRoles])];
-
-    try {
-      const payload = await requestJobs(true, roleTargets);
-      applyResponseState(payload, {
-        setJobs,
-        setPublicPotentialJobs,
-        setTotal,
-        setCvKeywords,
-        setCvProfile,
-        setLastUpdatedAt,
-        setConsultedSources,
-        setPreviewJobs,
-        setSuggestedRoles,
-        setActiveRoleTargets,
-        setSourceFetchMetrics
-      });
-      setAnalysisReady(true);
-    } catch {
-      return;
-    }
   }
 
   function renderJobCard(job: Job, featured = false) {
@@ -856,18 +775,9 @@ export function JobDashboard() {
             <button
               type="submit"
               disabled={loading || !cvFile}
-              className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-6 xl:col-span-3"
+              className="rounded-[24px] bg-[linear-gradient(135deg,#4338ca,#7c3aed)] px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-12 xl:col-span-6"
             >
               {loading ? "Analizzo..." : "Rianalizza CV"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void handleTargetedSearch()}
-              disabled={!analysisReady || loading || !cvProfile}
-              className="rounded-[24px] border border-black/10 bg-white/80 px-6 py-4 text-base font-semibold text-black transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 md:col-span-6 xl:col-span-3"
-            >
-              {targetedSearchLabel}
             </button>
           </form>
 

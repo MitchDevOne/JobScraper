@@ -33,23 +33,20 @@ function isPdfUpload(file: File) {
 
 export async function GET(request: NextRequest) {
   const filters = getFilters(request.nextUrl.searchParams);
-  const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
-    await fetchJobs(filters);
-
   const response: SearchResponse = {
-    total: jobs.length,
-    jobs,
-    publicPotentialJobs,
+    total: 0,
+    jobs: [],
+    publicPotentialJobs: [],
     cvKeywords: [],
     cvProfile: null,
     lastUpdatedAt: new Date().toISOString(),
     searchedLocation: filters.location ?? "",
     searchedLocationScope: filters.locationScope ?? "metro",
-    consultedSources,
-    previewJobs,
-    suggestedRoles,
-    activeRoleTargets,
-    sourceFetchMetrics
+    consultedSources: [],
+    previewJobs: [],
+    suggestedRoles: [],
+    activeRoleTargets: [],
+    sourceFetchMetrics: []
   };
 
   return NextResponse.json(response);
@@ -73,6 +70,8 @@ export async function POST(request: NextRequest) {
   if (file instanceof File && isPdfUpload(file)) {
     const arrayBuffer = await file.arrayBuffer();
     cvProfile = await parsePdfBuffer(Buffer.from(arrayBuffer));
+  } else {
+    return NextResponse.json({ error: "Carica un CV PDF valido per avviare l'analisi." }, { status: 400 });
   }
 
   const { jobs, publicPotentialJobs, consultedSources, previewJobs, suggestedRoles, activeRoleTargets, sourceFetchMetrics } =
