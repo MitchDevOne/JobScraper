@@ -786,7 +786,7 @@ export function JobDashboard() {
             {analysisReady && hasSemanticExpansionRoles ? (
               <div className="space-y-4 md:col-span-12 xl:col-span-6">
                 <div className="rounded-[24px] border border-[#dbe4ff] bg-white/80 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli espansi semanticamente selezionabili</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti da espansione semantica / LLM</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {suggestedRoles.map((role) => (
                       <button
@@ -805,8 +805,8 @@ export function JobDashboard() {
                   </div>
                   <p className="mt-3 text-sm leading-6 text-black/60">
                     {selectedRoleTargets.length > 0
-                      ? `Ruoli espansi semanticamente selezionati per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
-                      : "Questi ruoli non sono estratti direttamente dal CV: sono espansioni semantiche proposte dal modello. Puoi selezionarne alcuni per il prossimo rilancio, oppure non selezionare nulla e aggiungere automaticamente tutto il set suggerito."}
+                      ? `Ruoli suggeriti selezionati per il prossimo rilancio: ${selectedRoleTargets.map(titleCase).join(", ")}`
+                      : "Questi ruoli non sono estratti direttamente dal CV. Sono suggeriti dal modello tramite espansione semantica e ricerca LLM, e sono gli unici ruoli selezionabili per il rilancio successivo. Puoi selezionarne alcuni oppure usare automaticamente tutto il set suggerito."}
                   </p>
                 </div>
 
