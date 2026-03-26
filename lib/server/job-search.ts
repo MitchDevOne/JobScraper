@@ -2,6 +2,7 @@ import {
   aggregateRoleLabels,
   expandRoleTerms,
   expandSkillTerms,
+  inferSemanticRoleExpansions,
   normalizeForMatch,
   normalizeRoleLabel,
   textContainsPhrase
@@ -403,6 +404,12 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
 
   const explicitTitles = new Set(aggregateRoleLabels(cvProfile.titles, 16));
   const roleScores = new Map<string, number>();
+  const semanticExpansions = inferSemanticRoleExpansions({
+    keywords: cvProfile.keywords,
+    skills: cvProfile.skills,
+    experienceAreas: cvProfile.experienceAreas,
+    studyAreas: cvProfile.studyAreas
+  });
   const developerProfile = hasDeveloperFamilyProfile(cvProfile);
   const developerSuggestedRoles = new Set([
     "frontend developer",
@@ -456,6 +463,10 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
     for (const relatedRole of suggestedRoleFamilies[normalizeRoleLabel(title)] ?? []) {
       addRoleScore(relatedRole, 4);
     }
+  }
+
+  for (const semanticRole of semanticExpansions) {
+    addRoleScore(semanticRole, 6);
   }
 
   if (developerProfile && cvProfile.skills.includes("react")) {
@@ -576,7 +587,7 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
     .map(([role]) => role)
     .slice(0, 8);
 
-  return rankedRoles.length > 0 ? rankedRoles : [...explicitTitles].slice(0, 6);
+  return rankedRoles.length > 0 ? rankedRoles : semanticExpansions.filter((role) => !explicitTitles.has(normalizeRoleLabel(role))).slice(0, 6);
 }
 
 function hasAppliedExtractedCvRoles(cvProfile: CvProfile | null, activeRoleTargets: string[]) {
@@ -771,8 +782,30 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
   );
   const liveJobs = liveResults.flatMap((result) => result.jobs);
   const sourceFetchMetrics = liveResults.map((result) => result.metric);
-  const hasLivePrivateJobs = liveJobs.some((job) => job.sector === "privato");
-  const fallbackSeedJobs = privateJobsSeed.filter((job) => job.sector !== "privato" || !hasLivePrivateJobs);
+  const hasRelevantLivePrivateJobs = liveJobs.some((job) => {
+    if (job.sector !== "privato") {
+      return false;
+    }
+
+    if (!filters.includeRemote && job.workMode === "remote") {
+      return false;
+    }
+
+    if (filters.workMode && filters.workMode !== "all" && job.workMode !== filters.workMode) {
+      return false;
+    }
+
+    if (filters.contractTypes?.length && (!job.contractType || !filters.contractTypes.includes(job.contractType))) {
+      return false;
+    }
+
+    if (requestedLocation && !matchesLocation(job, requestedLocation, locationScope)) {
+      return false;
+    }
+
+    return passesCvFitGate(job, queryTokens, roleTargets, cvProfile, requestedLocation, locationScope);
+  });
+  const fallbackSeedJobs = privateJobsSeed.filter((job) => job.sector !== "privato" || !hasRelevantLivePrivateJobs);
   const jobs = await enrichPublicJobsWithRequirements(dedupeJobs([...liveJobs, ...fallbackSeedJobs]), cvProfile);
   const cvTokens = buildCvSemanticTokens(cvProfile);
 

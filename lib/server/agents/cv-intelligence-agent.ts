@@ -311,6 +311,15 @@ function inferTitlesFromProfileSignals(input: {
   return aggregateRoleLabels(inferred, 8);
 }
 
+export function inferSemanticRoleExpansions(input: {
+  keywords: string[];
+  skills: string[];
+  experienceAreas: string[];
+  studyAreas: string[];
+}) {
+  return inferTitlesFromProfileSignals(input);
+}
+
 export function expandRoleTerms(roles: string[]) {
   const expanded = new Set<string>();
 
