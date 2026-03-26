@@ -999,79 +999,6 @@ export function JobDashboard() {
                   </p>
                 )}
               </Panel>
-            </div>
-
-            <div className="space-y-6">
-              <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti ok</p>
-                    <p className="mt-3 text-3xl font-bold">{sourceSummary.successful}</p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti KO</p>
-                    <p className="mt-3 text-3xl font-bold">{sourceSummary.failed}</p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Latenza media</p>
-                    <p className="mt-3 text-3xl font-bold">{formatDuration(sourceSummary.avgDuration)}</p>
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {sourceFetchMetrics.length > 0 ? (
-                    sourceFetchMetrics.map((metric) => (
-                      <div key={metric.sourceId} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-semibold text-white">{metric.sourceLabel}</p>
-                            <p className="mt-1 text-xs text-white/55">
-                              {metric.success ? "Fetch completato" : "Fetch fallito"} - {formatDuration(metric.durationMs)}
-                            </p>
-                          </div>
-                          <span
-                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                              metric.success ? "bg-[#d6efe7] text-[#155b4a]" : "bg-[#f4dfce] text-[#8c4b1f]"
-                            }`}
-                          >
-                            {metric.success ? "ok" : "errore"}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 grid gap-2 text-xs text-white/70 sm:grid-cols-3">
-                          <p>Raccolti: {metric.fetchedJobs}</p>
-                          <p>Validi: {metric.validJobs}</p>
-                          <p>Dedupe key: {metric.dedupedJobs}</p>
-                        </div>
-
-                        {metric.query ? (
-                          <p className="mt-3 text-xs text-white/55">
-                            Query: {[...metric.query.roleKeywords, ...metric.query.skillKeywords].slice(0, 4).join(", ") || "nessuna query lato sorgente"}
-                          </p>
-                        ) : null}
-
-                        {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ffd4b5]">{metric.error}</p> : null}
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-white/70">Le metriche per fonte compariranno dopo la prima ricerca utile.</p>
-                  )}
-                </div>
-              </Panel>
-
-              <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
-                <div className="flex flex-wrap gap-2">
-                  {consultedSources.length > 0 ? (
-                    consultedSources.map((source) => (
-                      <span key={source} className="rounded-full border border-black/10 bg-[#f7ede5] px-3 py-1 text-xs">
-                        {source}
-                      </span>
-                    ))
-                  ) : (
-                    <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
-                  )}
-                </div>
-              </Panel>
 
               <Panel title="Keyword CV" subtitle="Segnali lessicali piu frequenti estratti dal profilo">
                 <div className="space-y-4">
@@ -1143,6 +1070,80 @@ export function JobDashboard() {
                   )}
                 </div>
               </Panel>
+
+              <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
+                <div className="flex flex-wrap gap-2">
+                  {consultedSources.length > 0 ? (
+                    consultedSources.map((source) => (
+                      <span key={source} className="rounded-full border border-black/10 bg-[#f7ede5] px-3 py-1 text-xs">
+                        {source}
+                      </span>
+                    ))
+                  ) : (
+                    <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
+                  )}
+                </div>
+              </Panel>
+            </div>
+
+            <div className="space-y-6">
+              <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti ok</p>
+                    <p className="mt-3 text-3xl font-bold">{sourceSummary.successful}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti KO</p>
+                    <p className="mt-3 text-3xl font-bold">{sourceSummary.failed}</p>
+                  </div>
+                  <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-white/50">Latenza media</p>
+                    <p className="mt-3 text-3xl font-bold">{formatDuration(sourceSummary.avgDuration)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {sourceFetchMetrics.length > 0 ? (
+                    sourceFetchMetrics.map((metric) => (
+                      <div key={metric.sourceId} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-white">{metric.sourceLabel}</p>
+                            <p className="mt-1 text-xs text-white/55">
+                              {metric.success ? "Fetch completato" : "Fetch fallito"} - {formatDuration(metric.durationMs)}
+                            </p>
+                          </div>
+                          <span
+                            className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                              metric.success ? "bg-[#d6efe7] text-[#155b4a]" : "bg-[#f4dfce] text-[#8c4b1f]"
+                            }`}
+                          >
+                            {metric.success ? "ok" : "errore"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 grid gap-2 text-xs text-white/70 sm:grid-cols-3">
+                          <p>Raccolti: {metric.fetchedJobs}</p>
+                          <p>Validi: {metric.validJobs}</p>
+                          <p>Dedupe key: {metric.dedupedJobs}</p>
+                        </div>
+
+                        {metric.query ? (
+                          <p className="mt-3 text-xs text-white/55">
+                            Query: {[...metric.query.roleKeywords, ...metric.query.skillKeywords].slice(0, 4).join(", ") || "nessuna query lato sorgente"}
+                          </p>
+                        ) : null}
+
+                        {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ffd4b5]">{metric.error}</p> : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-white/70">Le metriche per fonte compariranno dopo la prima ricerca utile.</p>
+                  )}
+                </div>
+              </Panel>
+
             </div>
           </div>
         </div>
