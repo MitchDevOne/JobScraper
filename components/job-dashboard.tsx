@@ -775,259 +775,242 @@ export function JobDashboard() {
             </div>
           ) : null}
 
-          <div className="space-y-6">
-            <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-              <Panel title="Profilo CV estratto" subtitle="Dopo l'analisi qui compaiono profilo, keyword operative e ruoli suggeriti selezionabili">
-                {cvProfile ? (
-                  <div className="space-y-5 text-sm text-black/75">
-                    <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f5f3ff] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Profilo del CV</p>
-                      <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
-                    </div>
+          {analysisReady ? (
+            <div className="space-y-6">
+              <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <Panel title="Profilo CV estratto" subtitle="Dopo l'analisi qui compaiono profilo, keyword operative e ruoli suggeriti selezionabili">
+                  {cvProfile ? (
+                    <div className="space-y-5 text-sm text-black/75">
+                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f5f3ff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d28d9]">Profilo del CV</p>
+                        <p className="mt-3 text-sm leading-6 text-black/75">{profileSummary}</p>
+                      </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {cvProfile.titles.length > 0 ? (
-                            cvProfile.titles.map((title) => (
-                              <span key={title} className="rounded-full border border-[#dbe4ff] bg-[#eef2ff] px-3 py-1 text-xs text-[#312e81]">
-                                {titleCase(title)}
-                              </span>
-                            ))
-                          ) : (
-                            <EmptyPill text="Nessun ruolo chiaro estratto dal CV." />
-                          )}
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-black/45">Ruoli trovati</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {cvProfile.titles.length > 0 ? (
+                              cvProfile.titles.map((title) => (
+                                <span key={title} className="rounded-full border border-[#dbe4ff] bg-[#eef2ff] px-3 py-1 text-xs text-[#312e81]">
+                                  {titleCase(title)}
+                                </span>
+                              ))
+                            ) : (
+                              <EmptyPill text="Nessun ruolo chiaro estratto dal CV." />
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.16em] text-black/45">Skill rilevate</p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {cvProfile.skills.length > 0 ? (
+                              cvProfile.skills.map((skill) => (
+                                <span key={skill} className="rounded-full border border-black/10 px-3 py-1 text-xs">
+                                  {titleCase(skill)}
+                                </span>
+                              ))
+                            ) : (
+                              <EmptyPill text="Nessuna skill rilevata." />
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.16em] text-black/45">Skill rilevate</p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {cvProfile.skills.length > 0 ? (
-                            cvProfile.skills.map((skill) => (
-                              <span key={skill} className="rounded-full border border-black/10 px-3 py-1 text-xs">
-                                {titleCase(skill)}
-                              </span>
-                            ))
-                          ) : (
-                            <EmptyPill text="Nessuna skill rilevata." />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <p>Esperienza: {cvProfile.experienceAreas.length > 0 ? cvProfile.experienceAreas.join(", ") : "non trovata"}</p>
-                      <p>Studio: {cvProfile.studyAreas.length > 0 ? cvProfile.studyAreas.join(", ") : "non trovato"}</p>
-                      <p>Titoli di studio: {cvProfile.educationLevels.length > 0 ? cvProfile.educationLevels.join(", ") : "non trovati"}</p>
-                      <p>Anni stimati: {cvProfile.yearsOfExperience ?? "n.d."}</p>
-                    </div>
-
-                    <div className="grid gap-4 lg:grid-cols-2">
-                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
-                        {suggestedRoles.length > 0 ? (
-                          <>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {suggestedRoles.map((role) => (
-                                <button
-                                  key={role}
-                                  type="button"
-                                  onClick={() => toggleSuggestedRole(role)}
-                                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                                    selectedSuggestedRoles.includes(role)
-                                      ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
-                                      : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
-                                  }`}
-                                >
-                                  {titleCase(role)}
-                                </button>
-                              ))}
-                            </div>
-                            <p className="mt-3 text-sm leading-6 text-black/60">
-                              {selectedSuggestedRoles.length > 0
-                                ? `Selezionati per il prossimo rilancio backend: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
-                                : "Seleziona uno o piu ruoli: il backend li combinera con keyword, skill e segnali del CV."}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="mt-3 text-sm leading-6 text-black/65">
-                            Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
-                          </p>
-                        )}
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <p>Esperienza: {cvProfile.experienceAreas.length > 0 ? cvProfile.experienceAreas.join(", ") : "non trovata"}</p>
+                        <p>Studio: {cvProfile.studyAreas.length > 0 ? cvProfile.studyAreas.join(", ") : "non trovato"}</p>
+                        <p>Titoli di studio: {cvProfile.educationLevels.length > 0 ? cvProfile.educationLevels.join(", ") : "non trovati"}</p>
+                        <p>Anni stimati: {cvProfile.yearsOfExperience ?? "n.d."}</p>
                       </div>
 
-                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
-                        <p className="mt-3 text-sm leading-6 text-black/65">
-                          Queste keyword vengono estratte dal profilo e usate dal backend come segnali operativi per cercare, filtrare e ordinare le posizioni.
-                        </p>
-
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {cvKeywords.length > 0 ? (
-                            cvKeywords.map((keyword, index) => (
-                              <span
-                                key={keyword}
-                                className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${keywordToneClass(index)}`}
-                              >
-                                {keyword}
-                              </span>
-                            ))
-                          ) : (
-                            <EmptyPill text="Keyword testuali non ancora disponibili." />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
-                        <p className="mt-3 text-sm leading-6 text-black/70">
-                          {formatList(
-                            [...cvProfile.titles, ...suggestedRoles],
-                            "I ruoli estratti compariranno qui dopo l'analisi",
-                            6
-                          )}
-                        </p>
-                      </div>
-
-                      <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
-                        <p className="mt-3 text-sm leading-6 text-black/70">
-                          {`${formatList(cvProfile.skills, "Skill in attesa", 5)}. Esperienza: ${formatList(
-                            cvProfile.experienceAreas,
-                            "non classificata",
-                            3
-                          )}.`}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
-                      <p className="mt-3 text-sm leading-6 text-black/75">
-                        Ruoli suggeriti e keyword vengono inviati al backend insieme a titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-sm leading-6 text-black/65">
-                      Carica un CV PDF per popolare questa card con profilo estratto, keyword operative e ruoli suggeriti selezionabili da usare nel backend di ricerca.
-                    </p>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Profilo del CV</p>
-                        <p className="mt-3 text-sm leading-6 text-black/65">
-                          Qui vedrai sintesi, ruoli trovati, skill rilevate ed elementi di esperienza estratti dal CV.
-                        </p>
-                      </div>
-                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
-                        <p className="mt-3 text-sm leading-6 text-black/65">
-                          Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
-                        </p>
-                      </div>
-                      <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f8f7ff] p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
-                        <p className="mt-3 text-sm leading-6 text-black/65">
-                          Dopo la lettura del CV qui vedrai keyword operative e segnali di contesto usati dal motore.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </Panel>
-
-              <Panel title="Sintesi matching" subtitle="Contatori principali e stato del ranking">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
-                  <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
-                  <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
-                  <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
-                </div>
-              </Panel>
-            </div>
-
-            <div className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
-              <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
-                <div className="max-h-[340px] overflow-y-auto pr-2">
-                  <div className="flex flex-wrap gap-2">
-                    {consultedSources.length > 0 ? (
-                      consultedSources.map((source) => (
-                        <span key={source} className="rounded-full border border-[#ddd6fe] bg-[#f5f3ff] px-3 py-1 text-xs text-[#4c1d95]">
-                          {source}
-                        </span>
-                      ))
-                    ) : (
-                      <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
-                    )}
-                  </div>
-                </div>
-              </Panel>
-
-              <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
-                <div className="max-h-[340px] overflow-y-auto pr-2">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti ok</p>
-                      <p className="mt-3 text-3xl font-bold">{sourceSummary.successful}</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti KO</p>
-                      <p className="mt-3 text-3xl font-bold">{sourceSummary.failed}</p>
-                    </div>
-                    <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
-                      <p className="text-xs uppercase tracking-[0.18em] text-white/50">Latenza media</p>
-                      <p className="mt-3 text-3xl font-bold">{formatDuration(sourceSummary.avgDuration)}</p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-3">
-                    {sourceFetchMetrics.length > 0 ? (
-                      sourceFetchMetrics.map((metric) => (
-                        <div key={metric.sourceId} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="text-sm font-semibold text-white">{metric.sourceLabel}</p>
-                              <p className="mt-1 text-xs text-white/55">
-                                {metric.success ? "Fetch completato" : "Fetch fallito"} - {formatDuration(metric.durationMs)}
+                      <div className="grid gap-4 lg:grid-cols-2">
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli suggeriti selezionabili</p>
+                          {suggestedRoles.length > 0 ? (
+                            <>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {suggestedRoles.map((role) => (
+                                  <button
+                                    key={role}
+                                    type="button"
+                                    onClick={() => toggleSuggestedRole(role)}
+                                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                                      selectedSuggestedRoles.includes(role)
+                                        ? "border-[#6366f1] bg-[#e0e7ff] text-[#4338ca]"
+                                        : "border-[#dbe4ff] bg-white hover:bg-[#eef2ff]"
+                                    }`}
+                                  >
+                                    {titleCase(role)}
+                                  </button>
+                                ))}
+                              </div>
+                              <p className="mt-3 text-sm leading-6 text-black/60">
+                                {selectedSuggestedRoles.length > 0
+                                  ? `Selezionati per il prossimo rilancio backend: ${selectedSuggestedRoles.map(titleCase).join(", ")}`
+                                  : "Seleziona uno o piu ruoli: il backend li combinera con keyword, skill e segnali del CV."}
                               </p>
-                            </div>
-                            <span
-                              className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
-                                metric.success ? "bg-[#e0e7ff] text-[#4338ca]" : "bg-[#f3e8ff] text-[#6d28d9]"
-                              }`}
-                            >
-                              {metric.success ? "ok" : "errore"}
-                            </span>
-                          </div>
-
-                          <div className="mt-3 grid gap-2 text-xs text-white/70 sm:grid-cols-3">
-                            <p>Raccolti: {metric.fetchedJobs}</p>
-                            <p>Validi: {metric.validJobs}</p>
-                            <p>Dedupe key: {metric.dedupedJobs}</p>
-                          </div>
-
-                          {metric.query ? (
-                            <p className="mt-3 text-xs text-white/55">
-                              Query: {[...metric.query.roleKeywords, ...metric.query.skillKeywords].slice(0, 4).join(", ") || "nessuna query lato sorgente"}
+                            </>
+                          ) : (
+                            <p className="mt-3 text-sm leading-6 text-black/65">
+                              Dopo la lettura del CV qui compaiono ruoli affini derivati da titoli, skill, esperienza e keyword.
                             </p>
-                          ) : null}
-
-                          {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ddd6fe]">{metric.error}</p> : null}
+                          )}
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-white/70">Le metriche per fonte compariranno dopo la prima ricerca utile.</p>
-                    )}
+
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Keyword operative</p>
+                          <p className="mt-3 text-sm leading-6 text-black/65">
+                            Queste keyword vengono estratte dal profilo e usate dal backend come segnali operativi per cercare, filtrare e ordinare le posizioni.
+                          </p>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {cvKeywords.length > 0 ? (
+                              cvKeywords.map((keyword, index) => (
+                                <span
+                                  key={keyword}
+                                  className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${keywordToneClass(index)}`}
+                                >
+                                  {keyword}
+                                </span>
+                              ))
+                            ) : (
+                              <EmptyPill text="Keyword testuali non ancora disponibili." />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
+                          <p className="mt-3 text-sm leading-6 text-black/70">
+                            {formatList(
+                              [...cvProfile.titles, ...suggestedRoles],
+                              "I ruoli estratti compariranno qui dopo l'analisi",
+                              6
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="rounded-[22px] border border-black/10 bg-white/70 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Skill e contesto</p>
+                          <p className="mt-3 text-sm leading-6 text-black/70">
+                            {`${formatList(cvProfile.skills, "Skill in attesa", 5)}. Esperienza: ${formatList(
+                              cvProfile.experienceAreas,
+                              "non classificata",
+                              3
+                            )}.`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
+                        <p className="mt-3 text-sm leading-6 text-black/75">
+                          Ruoli suggeriti e keyword vengono inviati al backend insieme a titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+                </Panel>
+
+                <Panel title="Sintesi matching" subtitle="Contatori principali e stato del ranking">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <InfoCard label="Totale" value={total} hint="Risultati compatibili mostrati in lista." tone="warm" />
+                    <InfoCard label="Privato" value={privateJobs.length} hint="Posizioni da aziende o board privati." />
+                    <InfoCard label="Pubblico" value={publicJobs.length} hint="Concorsi e avvisi compatibili." tone="cool" />
+                    <InfoCard label="PA da verificare" value={publicPotentialJobs.length} hint="Requisiti non ancora pienamente certi." />
                   </div>
-                </div>
-              </Panel>
+                </Panel>
+              </div>
+
+              <div className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
+                <Panel title="Fonti consultate" subtitle="Elenco sintetico delle sorgenti davvero interrogate">
+                  <div className="max-h-[340px] overflow-y-auto pr-2">
+                    <div className="flex flex-wrap gap-2">
+                      {consultedSources.length > 0 ? (
+                        consultedSources.map((source) => (
+                          <span key={source} className="rounded-full border border-[#ddd6fe] bg-[#f5f3ff] px-3 py-1 text-xs text-[#4c1d95]">
+                            {source}
+                          </span>
+                        ))
+                      ) : (
+                        <EmptyPill text="Nessuna fonte disponibile per i filtri correnti." />
+                      )}
+                    </div>
+                  </div>
+                </Panel>
+
+                <Panel dark title="Fonti e osservabilita" subtitle="Risposta delle sorgenti e segnali di retrieval">
+                  <div className="max-h-[340px] overflow-y-auto pr-2">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti ok</p>
+                        <p className="mt-3 text-3xl font-bold">{sourceSummary.successful}</p>
+                      </div>
+                      <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/50">Fonti KO</p>
+                        <p className="mt-3 text-3xl font-bold">{sourceSummary.failed}</p>
+                      </div>
+                      <div className="rounded-[22px] border border-white/10 bg-white/8 p-4">
+                        <p className="text-xs uppercase tracking-[0.18em] text-white/50">Latenza media</p>
+                        <p className="mt-3 text-3xl font-bold">{formatDuration(sourceSummary.avgDuration)}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 space-y-3">
+                      {sourceFetchMetrics.length > 0 ? (
+                        sourceFetchMetrics.map((metric) => (
+                          <div key={metric.sourceId} className="rounded-[22px] border border-white/10 bg-white/5 p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <p className="text-sm font-semibold text-white">{metric.sourceLabel}</p>
+                                <p className="mt-1 text-xs text-white/55">
+                                  {metric.success ? "Fetch completato" : "Fetch fallito"} - {formatDuration(metric.durationMs)}
+                                </p>
+                              </div>
+                              <span
+                                className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${
+                                  metric.success ? "bg-[#e0e7ff] text-[#4338ca]" : "bg-[#f3e8ff] text-[#6d28d9]"
+                                }`}
+                              >
+                                {metric.success ? "ok" : "errore"}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 grid gap-2 text-xs text-white/70 sm:grid-cols-3">
+                              <p>Raccolti: {metric.fetchedJobs}</p>
+                              <p>Validi: {metric.validJobs}</p>
+                              <p>Dedupe key: {metric.dedupedJobs}</p>
+                            </div>
+
+                            {metric.query ? (
+                              <p className="mt-3 text-xs text-white/55">
+                                Query: {[...metric.query.roleKeywords, ...metric.query.skillKeywords].slice(0, 4).join(", ") || "nessuna query lato sorgente"}
+                              </p>
+                            ) : null}
+
+                            {!metric.success && metric.error ? <p className="mt-3 text-xs text-[#ddd6fe]">{metric.error}</p> : null}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-white/70">Le metriche per fonte compariranno dopo la prima ricerca utile.</p>
+                      )}
+                    </div>
+                  </div>
+                </Panel>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-[28px] border border-dashed border-[#c7d2fe] bg-white/70 p-8 text-center">
+              <p className="text-xl font-semibold">Carica e analizza un CV per iniziare.</p>
+              <p className="mt-2 text-sm text-black/65">
+                Questa sessione mostra profilo, fonti e risultati solo dopo la prima analisi del CV e le eventuali rianalisi successive.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
