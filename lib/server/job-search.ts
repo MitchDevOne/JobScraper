@@ -96,6 +96,7 @@ const suggestedRoleFamilies: Record<string, string[]> = {
   "data analyst": ["business analyst", "data engineer", "project management officer"],
   "data engineer": ["data analyst", "backend developer", "cloud engineer"],
   "business analyst": ["project manager", "project management officer", "data analyst"],
+  "business developer": ["business analyst", "product manager", "project manager"],
   "project manager": ["project management officer", "business analyst", "product manager"],
   "project management officer": ["project manager", "business analyst", "product manager"],
   "product manager": ["project manager", "business analyst"],
@@ -402,11 +403,47 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
 
   const explicitTitles = new Set(aggregateRoleLabels(cvProfile.titles, 16));
   const roleScores = new Map<string, number>();
+  const developerProfile = hasDeveloperFamilyProfile(cvProfile);
+  const developerSuggestedRoles = new Set([
+    "frontend developer",
+    "backend developer",
+    "full stack developer",
+    "software engineer",
+    "cloud engineer",
+    "devops engineer",
+    "data engineer"
+  ]);
+
+  const isPrivateSuggestedRoleCandidate = (role: string) => {
+    const normalizedRole = normalizeRoleLabel(role);
+
+    if (!normalizedRole) {
+      return false;
+    }
+
+    if (normalizedRole.length > 60) {
+      return false;
+    }
+
+    if (
+      /\b(avviso|bando|concorso|ministero|comune|regione|citt[aà] metropolitana|assunzione|profilo|area|dipartimento)\b/i.test(
+        normalizedRole
+      )
+    ) {
+      return false;
+    }
+
+    if (!developerProfile && developerSuggestedRoles.has(normalizedRole)) {
+      return false;
+    }
+
+    return normalizedRole.split(" ").length <= 6;
+  };
 
   const addRoleScore = (role: string, weight: number) => {
     const normalizedRole = normalizeRoleLabel(role);
 
-    if (!normalizedRole) {
+    if (!normalizedRole || !isPrivateSuggestedRoleCandidate(normalizedRole)) {
       return;
     }
 
@@ -421,12 +458,12 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
     }
   }
 
-  if (cvProfile.skills.includes("react")) {
+  if (developerProfile && cvProfile.skills.includes("react")) {
     addRoleScore("frontend developer", 5);
     addRoleScore("full stack developer", 4);
   }
 
-  if (cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))) {
+  if (developerProfile && cvProfile.skills.some((skill) => ["java", "python", "node.js", ".net"].includes(skill))) {
     addRoleScore("backend developer", 5);
     addRoleScore("software engineer", 4);
   }
@@ -434,10 +471,12 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   if (cvProfile.skills.some((skill) => ["sql", "power bi", "data analysis", "machine learning"].includes(skill))) {
     addRoleScore("data analyst", 5);
     addRoleScore("business analyst", 3);
-    addRoleScore("data engineer", 3);
+    if (developerProfile) {
+      addRoleScore("data engineer", 3);
+    }
   }
 
-  if (cvProfile.skills.some((skill) => ["aws", "azure", "docker", "cloud"].includes(skill))) {
+  if (developerProfile && cvProfile.skills.some((skill) => ["aws", "azure", "docker", "cloud"].includes(skill))) {
     addRoleScore("cloud engineer", 4);
     addRoleScore("devops engineer", 4);
   }
@@ -456,15 +495,19 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   if (cvProfile.studyAreas.includes("business administration")) {
     addRoleScore("business analyst", 4);
     addRoleScore("project manager", 3);
-    addRoleScore("product manager", 2);
+    addRoleScore("product manager", 4);
+    addRoleScore("business developer", 4);
   }
 
   if (cvProfile.studyAreas.includes("data science")) {
     addRoleScore("data analyst", 4);
-    addRoleScore("data engineer", 3);
+
+    if (developerProfile) {
+      addRoleScore("data engineer", 3);
+    }
   }
 
-  if (cvProfile.studyAreas.includes("software")) {
+  if (developerProfile && cvProfile.studyAreas.includes("software")) {
     addRoleScore("software engineer", 4);
     addRoleScore("backend developer", 3);
   }
@@ -472,7 +515,8 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   if (cvProfile.educationLevels.includes("mba")) {
     addRoleScore("business analyst", 3);
     addRoleScore("project manager", 3);
-    addRoleScore("product manager", 2);
+    addRoleScore("product manager", 4);
+    addRoleScore("business developer", 3);
   }
 
   if (cvProfile.keywords.some((keyword) => ["pmo", "coordinamento", "supporto"].includes(normalizeForMatch(keyword)))) {
@@ -480,14 +524,32 @@ function buildSuggestedRoles(cvProfile: CvProfile | null, jobs: Job[]) {
   }
 
   if (cvProfile.keywords.some((keyword) => ["analisi", "analytics", "reporting"].includes(normalizeForMatch(keyword)))) {
-    addRoleScore("data analyst", 3);
-    addRoleScore("business analyst", 2);
+    addRoleScore("data analyst", 5);
+    addRoleScore("business analyst", 3);
   }
 
-  for (const job of jobs.slice(0, 24)) {
+  if (
+    cvProfile.keywords.some((keyword) =>
+      ["business", "partnership", "sviluppo", "commerciale", "go-to-market"].includes(normalizeForMatch(keyword))
+    )
+  ) {
+    addRoleScore("business developer", 5);
+    addRoleScore("business analyst", 3);
+  }
+
+  if (
+    cvProfile.keywords.some((keyword) =>
+      ["product", "roadmap", "stakeholder", "backlog", "prioritizzazione"].includes(normalizeForMatch(keyword))
+    ) ||
+    cvProfile.experienceAreas.includes("project management")
+  ) {
+    addRoleScore("product manager", 5);
+  }
+
+  for (const job of jobs.filter((item) => item.sector === "privato").slice(0, 24)) {
     const normalizedTitle = normalizeRoleLabel(job.title);
 
-    if (explicitTitles.has(normalizedTitle)) {
+    if (explicitTitles.has(normalizedTitle) || !isPrivateSuggestedRoleCandidate(normalizedTitle)) {
       continue;
     }
 
@@ -799,7 +861,7 @@ export async function fetchJobs(filters: JobFilters, cvProfile: CvProfile | null
     publicPotentialJobs,
     consultedSources: buildConsultedSources(jobs, requestedLocation, locationScope),
     previewJobs: filteredJobs.slice(0, 3),
-    suggestedRoles: buildSuggestedRoles(cvProfile, filteredJobs),
+    suggestedRoles: activeRoleTargets.length > 0 ? buildSuggestedRoles(cvProfile, filteredJobs) : [],
     activeRoleTargets,
     sourceFetchMetrics
   };

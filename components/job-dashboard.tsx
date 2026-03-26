@@ -202,26 +202,7 @@ function applyResponseState(
     setters.setLastUpdatedAt(payload.lastUpdatedAt);
     setters.setConsultedSources(payload.consultedSources);
     setters.setPreviewJobs(payload.previewJobs);
-    setters.setSuggestedRoles(
-      payload.suggestedRoles.length > 0
-        ? payload.suggestedRoles
-        : payload.cvProfile
-          ? [
-              ...payload.cvProfile.titles,
-              ...payload.cvProfile.skills.flatMap((skill) =>
-                skill === "react"
-                  ? ["frontend developer", "full stack developer"]
-                  : ["java", "python", "node.js", ".net"].includes(skill)
-                    ? ["backend developer", "software engineer"]
-                    : ["sql", "power bi", "data analysis"].includes(skill)
-                      ? ["data analyst", "business analyst"]
-                      : skill === "project management"
-                        ? ["project management officer", "project manager"]
-                        : []
-              )
-            ].filter((value, index, items) => Boolean(value) && items.indexOf(value) === index)
-          : []
-    );
+    setters.setSuggestedRoles(payload.suggestedRoles);
     setters.setActiveRoleTargets(payload.activeRoleTargets);
     setters.setSourceFetchMetrics(payload.sourceFetchMetrics ?? []);
   });
@@ -367,13 +348,17 @@ export function JobDashboard() {
   const sourceSummary = sourceMetricSummary(sourceFetchMetrics);
   const currentStep = loading ? 1 : analysisReady ? 3 : cvProfile ? 2 : 1;
   const profileSummary = buildCvProfileSummary(cvProfile);
+  const hasExtractedRoleTargets = Boolean(cvProfile && cvProfile.titles.length > 0);
+  const hasAppliedExtractedRoles = activeRoleTargets.length > 0;
   const reanalyzeLabel = loading
     ? "Analizzo..."
     : selectedSuggestedRoles.length > 0
       ? "Rilancia la ricerca con le figure suggerite selezionate"
       : suggestedRoles.length > 0
         ? "Rilancia la ricerca aggiungendo tutte le figure suggerite"
-        : "Rianalizza CV";
+        : hasExtractedRoleTargets && !hasAppliedExtractedRoles
+          ? "Rilancia la ricerca con i ruoli estratti dal CV"
+          : "Rianalizza CV";
 
   const requestJobs = useCallback(async (usePost: boolean, roleTargets: string[] = [], cvFileOverride?: File | null) => {
     setLoading(true);
@@ -438,7 +423,9 @@ export function JobDashboard() {
     const roleTargets =
       cvProfile && suggestedRoles.length > 0
         ? [...new Set([...(cvProfile.titles ?? []), ...(selectedSuggestedRoles.length > 0 ? selectedSuggestedRoles : suggestedRoles)])]
-        : [];
+        : cvProfile?.titles?.length
+          ? [...new Set(cvProfile.titles)]
+          : [];
     setAnalysisReady(false);
 
     try {
@@ -816,6 +803,16 @@ export function JobDashboard() {
             >
               {reanalyzeLabel}
             </button>
+
+            {analysisReady && hasExtractedRoleTargets && suggestedRoles.length === 0 ? (
+              <div className="rounded-[24px] border border-[#dbe4ff] bg-[#f8faff] p-4 text-sm text-black/65 md:col-span-12 xl:col-span-12">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Sequenza di affinamento</p>
+                <p className="mt-3 leading-6">
+                  Alla prima analisi il sistema usa solo i ruoli congrui estratti dal CV. Al prossimo rilancio questi ruoli
+                  vengono applicati alla ricerca e il modello elabora le figure suggerite da usare eventualmente nel passaggio successivo.
+                </p>
+              </div>
+            ) : null}
           </form>
 
           {errorMessage ? (
@@ -828,7 +825,7 @@ export function JobDashboard() {
           {analysisReady ? (
             <div className="space-y-6">
               <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                <Panel title="Profilo CV estratto" subtitle="Dopo l'analisi qui compaiono profilo, keyword operative e ruoli suggeriti selezionabili">
+                <Panel title="Profilo CV estratto" subtitle="Dopo l'analisi qui compaiono profilo, keyword operative e ruoli congrui estratti dal CV">
                   {cvProfile ? (
                     <div className="space-y-5 text-sm text-black/75">
                       <div className="rounded-[22px] border border-[#ddd6fe] bg-[#f5f3ff] p-4">
@@ -902,7 +899,7 @@ export function JobDashboard() {
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-black/45">Ruoli e famiglie</p>
                           <p className="mt-3 text-sm leading-6 text-black/70">
                             {formatList(
-                              [...cvProfile.titles, ...suggestedRoles],
+                              hasAppliedExtractedRoles ? [...cvProfile.titles, ...suggestedRoles] : cvProfile.titles,
                               "I ruoli estratti compariranno qui dopo l'analisi",
                               6
                             )}
@@ -926,7 +923,7 @@ export function JobDashboard() {
                       <div className="rounded-[22px] border border-[#c7d2fe] bg-[#eef2ff] p-4">
                         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#4338ca]">Come viene usato</p>
                         <p className="mt-3 text-sm leading-6 text-black/75">
-                          Ruoli suggeriti e keyword vengono inviati al backend insieme a titoli, skill, seniority stimata e aree di esperienza per evitare match troppo superficiali.
+                          Prima il backend usa i ruoli estratti dal CV insieme a keyword, skill, seniority stimata e aree di esperienza. Solo dal rilancio successivo elabora e aggiunge le figure suggerite.
                         </p>
                       </div>
                     </div>

@@ -270,6 +270,13 @@ function looksLikeJobLink(anchor: HtmlAnchor) {
   const text = normalize(anchor.text);
   const href = normalize(anchor.href);
 
+  if (
+    /\b(premi|awards|news|press|about|chi-siamo|certificazioni|valori|storia|eventi|blog|media)\b/.test(text) ||
+    /\b(premi|awards|news|press|about|chi-siamo|certificazioni|valori|storia|eventi|blog|media)\b/.test(href)
+  ) {
+    return false;
+  }
+
   if (jobLinkMatchers.some((token) => text.includes(token) || href.includes(token))) {
     return true;
   }
@@ -417,6 +424,48 @@ function textMatchesSemanticFocus(text: string, query: SourceQuery) {
   return semanticTokens.some((token) => haystack.includes(token));
 }
 
+function hasJobOfferSignal(title: string, summary: string, text: string, url: string) {
+  const haystack = normalize([title, summary, text, url].join(" "));
+
+  const negativeSignals = [
+    "great place to work",
+    "i nostri premi",
+    "our awards",
+    "certificato",
+    "certificata",
+    "chi siamo",
+    "about us",
+    "press release",
+    "comunicato stampa",
+    "newsroom",
+    "notizia",
+    "eventi",
+    "valori",
+    "cultura aziendale"
+  ];
+
+  if (negativeSignals.some((signal) => haystack.includes(signal))) {
+    return false;
+  }
+
+  const positiveSignals = [
+    "responsabilita",
+    "responsibilities",
+    "requisiti",
+    "requirements",
+    "candidati",
+    "candidatura",
+    "apply",
+    "application",
+    "job description",
+    "posizione",
+    "offerta di lavoro",
+    "join our team"
+  ];
+
+  return positiveSignals.some((signal) => haystack.includes(signal));
+}
+
 async function fetchHtml(url: string) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), CAREER_PAGE_FETCH_TIMEOUT_MS);
@@ -481,6 +530,10 @@ async function buildJobFromOfferUrl(target: CareerTarget, offerUrl: string, quer
     const textBlob = [pageTitle, metaDescription, firstParagraph, cleanText(html).slice(0, 4000)].join(" ");
 
     if (!hasLocalSignal(textBlob, target.defaultCity)) {
+      return null;
+    }
+
+    if (!hasJobOfferSignal(pageTitle, metaDescription || firstParagraph, textBlob, offerUrl)) {
       return null;
     }
 

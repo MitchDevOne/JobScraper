@@ -46,6 +46,7 @@ export function evaluatePrivateExperienceAlignment(signals: PrivateSignalSnapsho
   const preferredFamilies = inferPreferredPrivateRoleFamilies(cvProfile);
   const jobFamily = inferPrivateJobFamily(job);
   const familyAligned = jobFamily === "generic" || preferredFamilies.includes(jobFamily);
+  const familyBoost = familyAligned ? 8 : 0;
   const strongFit = signals.roleMatches > 0 || (signals.skillMatches > 1 && signals.experienceMatches > 0);
   const mediumFit =
     signals.roleMatches > 0 ||
@@ -76,6 +77,7 @@ export function evaluatePrivateExperienceAlignment(signals: PrivateSignalSnapsho
       signals.skillMatches * 6 +
       signals.experienceMatches * 5 +
       signals.educationMatches * 4 +
+      familyBoost +
       yearsBoost +
       developerMismatchPenalty +
       familyPenalty +

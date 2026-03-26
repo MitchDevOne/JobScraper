@@ -250,6 +250,23 @@ function inferTitlesFromProfileSignals(input: {
   const experience = new Set(input.experienceAreas.map(normalizeForMatch));
   const studyAreas = new Set(input.studyAreas.map(normalizeForMatch));
   const keywords = new Set(input.keywords.map(normalizeForMatch));
+  const hasBusinessSignal =
+    studyAreas.has("business administration") ||
+    experience.has("digital transformation") ||
+    keywords.has("business") ||
+    keywords.has("supporto") ||
+    keywords.has("coordinamento");
+  const hasProductSignal =
+    skills.has("project management") ||
+    experience.has("project management") ||
+    keywords.has("product") ||
+    keywords.has("roadmap") ||
+    keywords.has("stakeholder");
+  const hasBusinessDevelopmentSignal =
+    keywords.has("business") ||
+    keywords.has("partnership") ||
+    keywords.has("sviluppo") ||
+    experience.has("digital transformation");
 
   if (skills.has("react") || skills.has("typescript") || experience.has("frontend")) {
     inferred.push("frontend developer");
@@ -277,6 +294,14 @@ function inferTitlesFromProfileSignals(input: {
 
   if (studyAreas.has("business administration") || keywords.has("business") || experience.has("digital transformation")) {
     inferred.push("business analyst");
+  }
+
+  if (hasProductSignal && hasBusinessSignal) {
+    inferred.push("product manager");
+  }
+
+  if (hasBusinessDevelopmentSignal && hasBusinessSignal) {
+    inferred.push("business developer");
   }
 
   if (studyAreas.has("software") && inferred.length === 0) {
@@ -406,6 +431,24 @@ export function inferPreferredPrivateRoleFamilies(cvProfile: CvProfile | null) {
 
   if ((cvProfile?.studyAreas ?? []).includes("business administration")) {
     families.add("business");
+    families.add("product");
+  }
+
+  if ((cvProfile?.experienceAreas ?? []).includes("project management")) {
+    families.add("product");
+    families.add("project");
+  }
+
+  if ((cvProfile?.keywords ?? []).some((keyword) => ["business", "partnership", "sviluppo", "go-to-market"].includes(normalizeForMatch(keyword)))) {
+    families.add("business");
+  }
+
+  if ((cvProfile?.keywords ?? []).some((keyword) => ["product", "roadmap", "stakeholder", "backlog"].includes(normalizeForMatch(keyword)))) {
+    families.add("product");
+  }
+
+  if ((cvProfile?.skills ?? []).some((skill) => ["sql", "power bi", "data analysis", "machine learning"].includes(normalizeForMatch(skill)))) {
+    families.add("data");
   }
 
   return [...families];
