@@ -246,8 +246,8 @@ function StepCard({
         active
           ? "border-[#6366f1] bg-[linear-gradient(135deg,rgba(224,231,255,0.95),rgba(243,232,255,0.92))] text-[#312e81] shadow-card"
           : done
-            ? "border-[#c7d2fe] bg-[#eef2ff] text-[#4338ca]"
-            : "border-[#dbe4ff] bg-white/75 text-black/60"
+            ? "border-[#c7d2fe] bg-[linear-gradient(135deg,rgba(224,231,255,0.88),rgba(243,232,255,0.82))] text-[#4338ca]"
+            : "border-[#dbe4ff] bg-[linear-gradient(135deg,rgba(224,231,255,0.62),rgba(243,232,255,0.56))] text-[#4338ca]"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -257,14 +257,14 @@ function StepCard({
               ? "border-[#6366f1]/30 bg-white/70 text-[#4338ca]"
               : done
                 ? "border-[#818cf8]/25 bg-white/70 text-[#4f46e5]"
-                : "border-[#dbe4ff] bg-white/80 text-black/45"
+                : "border-[#dbe4ff] bg-white/80 text-[#6366f1]"
           }`}
         >
           {step}
         </span>
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
-          <p className={`text-sm leading-6 ${active ? "text-[#4338ca]/80" : done ? "text-[#4f46e5]/80" : "text-black/50"}`}>
+          <p className={`text-sm leading-6 ${active ? "text-[#4338ca]/80" : done ? "text-[#4f46e5]/80" : "text-[#4338ca]/72"}`}>
             {description}
           </p>
         </div>
